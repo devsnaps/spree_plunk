@@ -11,7 +11,7 @@ It is built for marketing use cases such as workflows, campaigns, and audience s
 - tracks selected Spree commerce events into Plunk for workflows and segmentation
 - keeps marketing consent explicit instead of inferring it from behavioral events
 - supports both hosted Plunk and self-hosted Plunk through a configurable base API URL
-- can optionally accept unsubscribe callbacks from Plunk and write them back into Spree
+- can optionally accept contact subscription-state callbacks from Plunk and write them back into Spree
 
 ## Current Features
 
@@ -72,11 +72,12 @@ These events are intended for:
 - lifecycle automation
 - post-purchase marketing flows
 
-Current storefront analytics boundary:
+Current storefront event-source boundary:
 
-- these newer storefront analytics events are sent only when a known email is available
 - cart events are line-item backed so the payload stays item-specific
-- checkout and coupon events are order-backed so contact ensure-upsert stays consent-safe
+- checkout events are checkout-service backed so step/email tracking follows real server-side state changes
+- coupon events are coupon-handler backed so apply/remove outcomes do not depend on storefront analytics
+- the storefront analytics handler is currently unused for the supported event set, which avoids duplicate tracking if Spree later emits overlapping analytics events
 - browse-only analytics such as product view, product list view, and product search remain deferred
 
 ### Admin And Operations
@@ -85,7 +86,7 @@ Current storefront analytics boundary:
 - connectivity check against the Plunk API
 - optional default sender fields for future use
 - optional public API key storage, intentionally unused by the current server-side MVP
-- optional inbound unsubscribe webhook guarded by a bearer token
+- optional inbound subscription-state webhook guarded by a bearer token
 - duplicate-delivery protection for webhook intake
 - retry/discard classification for async sync failures
 - structured error reporting through `Rails.error.report`
@@ -116,8 +117,8 @@ The current admin form exposes these fields.
 | `Public API Key` | No | An optional browser/public key, typically `pk_*` | Stored only for future use. The current server-side MVP does not use it. |
 | `Default Sender Email` | No | A mailbox such as `marketing@example.com` | Stored for future sender-related features. It does not change current sync or event tracking behavior on its own. |
 | `Default Sender Name` | No | A display name such as `Example Store` | If you set this, also set `Default Sender Email` so the stored sender identity is complete. |
-| `Enable Unsubscribe Webhook` | No | Check this only if you want Plunk unsubscribe events to write back into Spree | Disabled by default. |
-| `Unsubscribe Webhook Authorization Token` | Required only when webhook is enabled | A shared secret that you generate yourself | Plunk will send this back in the `Authorization` header as `Bearer <token>`. |
+| `Enable Subscription Webhook` | No | Check this only if you want Plunk contact subscription changes to write back into Spree | Disabled by default. |
+| `Subscription Webhook Authorization Token` | Required only when webhook is enabled | A shared secret that you generate yourself | Plunk will send this back in the `Authorization` header as `Bearer <token>`. |
 
 ### Where Each Value Comes From
 
@@ -151,7 +152,7 @@ The current admin form exposes these fields.
 3. Run the built-in connection check from the admin UI.
 4. Create or update a newsletter subscriber in Spree and confirm that a Plunk contact is created.
 5. Complete a test order and confirm that Plunk receives `spree.order.completed`.
-6. Enable the inbound unsubscribe webhook only after the outbound contact sync path is already behaving correctly.
+6. Enable the inbound subscription webhook only after the outbound contact sync path is already behaving correctly.
 
 ## API Strategy
 
@@ -170,24 +171,25 @@ This extension does not rely on `/v1/track` for server-side commerce sync. The r
 - only explicit newsletter opt-in should set `subscribed: true`
 - user, checkout, and order-backed contact creation should stay unsubscribed unless consent is known
 - commerce events should preserve an existing customer consent state instead of downgrading or upgrading it implicitly
-- the unsubscribe webhook is disabled by default
-- webhook writeback only accepts unsubscribe semantics and no-ops safely when the local email cannot be matched
+- the subscription webhook is disabled by default
+- webhook writeback only accepts explicit contact subscription-state semantics
 
-## Inbound Unsubscribe Webhook
+## Inbound Subscription Webhook
 
-When enabled, the extension can receive a Plunk unsubscribe webhook and apply that change locally.
+When enabled, the extension can receive a Plunk contact subscription webhook and apply that change locally.
 
 Current behavior:
 
 - requires explicit operator opt-in
 - requires an authorization bearer token
-- accepts `contact.unsubscribed` semantics only
+- accepts explicit `contact.subscribed` and `contact.unsubscribed` semantics
 - looks up the local email in Spree
-- removes the matching newsletter subscriber when present
-- clears `accepts_email_marketing` on the matching user when applicable
+- creates or verifies the matching newsletter subscriber when Plunk subscribes the contact
+- removes the matching newsletter subscriber when Plunk unsubscribes the contact
+- updates `accepts_email_marketing` on the matching user when applicable
 - suppresses Spree event publication during the local writeback to avoid immediate echo loops
 - ignores duplicate deliveries using replay protection
-- safely no-ops when the email does not exist locally
+- can create a verified newsletter subscriber for a known email even when only the Plunk-side subscription state exists locally
 
 ### How The Webhook Works
 
@@ -202,14 +204,17 @@ The request flow is:
 1. Spree finds the active Plunk integration by `integration_id`.
 2. The webhook must be enabled for that integration or the endpoint returns `404`.
 3. Spree checks the `Authorization` header and requires an exact bearer-token match.
-4. Spree accepts the request only if the payload clearly indicates unsubscribe semantics.
-5. Spree resolves the contact email and applies a local unsubscribe writeback.
+4. Spree accepts the request only if the payload clearly indicates contact subscription-state semantics.
+5. Spree resolves the contact email and applies the matching local subscribe or unsubscribe writeback.
 6. Duplicate deliveries are ignored so the endpoint stays idempotent.
 
-The current webhook processor accepts these signals as proof of unsubscribe:
+The current webhook processor accepts these signals as proof of contact subscription state:
 
+- `contact.subscribed: true`
 - `contact.subscribed: false`
+- top-level `subscribed: true`
 - top-level `subscribed: false`
+- event name `contact.subscribed`
 - event name `contact.unsubscribed`
 
 The current implementation prefers the default Plunk webhook payload and extracts the email from:
@@ -217,13 +222,13 @@ The current implementation prefers the default Plunk webhook payload and extract
 - `contact.email`
 - or top-level `email`
 
-### How To Get The `Unsubscribe Webhook Authorization Token`
+### How To Get The `Subscription Webhook Authorization Token`
 
 This token is not issued by Plunk.
 
 It is a shared secret that you generate yourself and configure in both places:
 
-1. Store it in Spree Admin as `Unsubscribe Webhook Authorization Token`.
+1. Store it in Spree Admin as `Subscription Webhook Authorization Token`.
 2. Send the same value from the Plunk webhook step as:
 
 ```text
@@ -232,7 +237,7 @@ Authorization: Bearer your-secret-token
 
 Example:
 
-- Spree field `Unsubscribe Webhook Authorization Token`:
+- Spree field `Subscription Webhook Authorization Token`:
   - `12b61441e2177ef63ff91623a2c8da531c97bac8890172530f8c90a2ffb3012e`
 - Plunk webhook header:
   - Name: `Authorization`
@@ -254,7 +259,7 @@ ruby -rsecurerandom -e 'puts SecureRandom.hex(32)'
 
 ### How To Configure The Webhook In Plunk
 
-Plunk's own webhook guidance matches the shape this extension expects: use a workflow triggered by `contact.unsubscribed`, send a public HTTP request, and authenticate it with a shared-secret header.
+Plunk's own webhook guidance matches the shape this extension expects: use workflow triggers such as `contact.subscribed` and `contact.unsubscribed`, send a public HTTP request, and authenticate it with a shared-secret header.
 
 Recommended setup:
 
@@ -288,6 +293,7 @@ Recommended setup:
 
 7. Leave the body empty so Plunk sends its default payload.
 8. Enable the workflow.
+9. Repeat the same setup for a second Plunk workflow triggered by `contact.subscribed` and send it to the same Spree endpoint.
 
 Notes:
 
@@ -295,9 +301,15 @@ Notes:
 - HTTPS is preferred.
 - Plunk webhook delivery is workflow-based, so no workflow means no webhook.
 - This extension is built to work with Plunk's default webhook payload shape.
-- If you choose a custom webhook body, it still needs to include unsubscribe semantics plus the contact email.
+- If you choose a custom webhook body, it still needs to include explicit subscription-state semantics plus the contact email.
 
-### Expected Local Result After A Successful Plunk Unsubscribe
+### Expected Local Result After A Successful Plunk Subscription Change
+
+If Plunk flips a contact to subscribed and the webhook is configured correctly:
+
+- the matching `Spree::NewsletterSubscriber` row is created or verified
+- the matching user's `accepts_email_marketing` becomes `true` when supported
+- repeating the same delivery should stay safe and idempotent
 
 If Plunk flips a contact to unsubscribed and the webhook is configured correctly:
 

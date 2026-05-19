@@ -51,6 +51,15 @@ The extension currently sends these namespaced events to Plunk:
 
 - `spree.newsletter.subscribed`
 - `spree.newsletter.unsubscribed`
+- `spree.checkout.email_entered`
+- `spree.cart.added`
+- `spree.cart.removed`
+- `spree.coupon.entered`
+- `spree.coupon.removed`
+- `spree.coupon.applied`
+- `spree.coupon.denied`
+- `spree.checkout.step_viewed`
+- `spree.checkout.step_completed`
 - `spree.order.completed`
 - `spree.order.canceled`
 - `spree.shipment.shipped`
@@ -62,6 +71,13 @@ These events are intended for:
 - segmentation
 - lifecycle automation
 - post-purchase marketing flows
+
+Current storefront analytics boundary:
+
+- these newer storefront analytics events are sent only when a known email is available
+- cart events are line-item backed so the payload stays item-specific
+- checkout and coupon events are order-backed so contact ensure-upsert stays consent-safe
+- browse-only analytics such as product view, product list view, and product search remain deferred
 
 ### Admin And Operations
 

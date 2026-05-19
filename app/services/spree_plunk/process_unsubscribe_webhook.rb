@@ -3,7 +3,7 @@ require 'json'
 
 module SpreePlunk
   class ProcessUnsubscribeWebhook < Base
-    REPLAY_CACHE_NAMESPACE = 'spree_plunk:unsubscribe_webhook'.freeze
+    REPLAY_CACHE_NAMESPACE = 'spree_plunk:subscription_webhook'.freeze
     REPLAY_TTL = 1.day
 
     def self.replay_cache_store
@@ -16,7 +16,8 @@ module SpreePlunk
       return noop_result('webhook_disabled') unless plunk_integration&.preferred_unsubscribe_webhook_enabled
 
       normalized_payload = normalize_payload(payload)
-      return noop_result('unsupported_payload') unless unsubscribe_signal?(normalized_payload)
+      subscribed = resolved_subscription_state(normalized_payload)
+      return noop_result('unsupported_payload') if subscribed.nil?
 
       email = resolved_email(normalized_payload)
       return noop_result('missing_email') if email.blank?
@@ -24,7 +25,7 @@ module SpreePlunk
       delivery_cache_key = replay_cache_key(plunk_integration: plunk_integration, payload: normalized_payload)
       return noop_result('duplicate_delivery') unless claim_delivery!(delivery_cache_key)
 
-      result = SpreePlunk::ApplyLocalUnsubscribe.call(email: email)
+      result = local_writeback_service(subscribed).call(email: email)
       release_delivery!(delivery_cache_key) if result.failure?
 
       result
@@ -38,14 +39,17 @@ module SpreePlunk
       payload.to_h.deep_stringify_keys
     end
 
-    def unsubscribe_signal?(payload)
-      explicit_unsubscribe_value?(payload.dig('contact', 'subscribed')) ||
-        explicit_unsubscribe_value?(payload['subscribed']) ||
-        event_name(payload) == 'contact.unsubscribed'
-    end
+    def resolved_subscription_state(payload)
+      explicit_value = payload.dig('contact', 'subscribed')
+      explicit_value = payload['subscribed'] if explicit_value.nil? && payload.key?('subscribed')
+      return BOOLEAN.cast(explicit_value) unless explicit_value.nil?
 
-    def explicit_unsubscribe_value?(value)
-      !value.nil? && BOOLEAN.cast(value) == false
+      case event_name(payload)
+      when 'contact.subscribed'
+        true
+      when 'contact.unsubscribed'
+        false
+      end
     end
 
     def event_name(payload)
@@ -100,6 +104,10 @@ module SpreePlunk
 
     def replay_cache
       self.class.replay_cache_store
+    end
+
+    def local_writeback_service(subscribed)
+      subscribed ? SpreePlunk::ApplyLocalSubscribe : SpreePlunk::ApplyLocalUnsubscribe
     end
   end
 end

@@ -94,12 +94,12 @@
 
 <div class="card mb-4">
   <div class="card-body">
-    <h3 class="h6 mb-3">Inbound unsubscribe webhook</h3>
+    <h3 class="h6 mb-3">Inbound subscription-state webhook</h3>
     <% unsubscribe_webhook_path = @integration.persisted? ? plunk_unsubscribe_webhook_path(@integration) : nil %>
 
     <div class="alert alert-warning mt-n1">
-      Default off. Enable this only if you want Plunk <code>contact.unsubscribed</code> workflow events to write back into
-      Spree and clear local newsletter consent by email.
+      Default off. Enable this only if you want Plunk <code>contact.subscribed</code> and <code>contact.unsubscribed</code>
+      workflow events to write back into Spree and keep local newsletter consent aligned by email.
     </div>
 
     <%= preference_field(
@@ -109,7 +109,8 @@
       i18n_scope: "admin.integrations.plunk",
     ) %>
     <p class="mb-4 mt-n2">
-      When enabled, configure a dedicated Plunk workflow webhook for <code>contact.unsubscribed</code> and send it to
+      When enabled, configure dedicated Plunk workflow webhooks for <code>contact.subscribed</code> and
+      <code>contact.unsubscribed</code> and send both to
       <% if unsubscribe_webhook_path.present? %>
         <code><%= unsubscribe_webhook_path %></code>.
       <% else %>
@@ -132,8 +133,8 @@
     ) if @integration.new_record? %>
     <p class="mb-0 mt-n2">
       Required when the webhook is enabled. Send the same value as an <code>Authorization</code> header in Plunk using
-      the format <code>Bearer your-secret-token</code>. The intake only accepts unsubscribe semantics and is designed to
-      no-op safely when the email cannot be matched locally.
+      the format <code>Bearer your-secret-token</code>. The intake only accepts explicit contact subscription-state
+      semantics and suppresses local Spree event publication during writeback to avoid immediate echo loops.
     </p>
   </div>
 </div>

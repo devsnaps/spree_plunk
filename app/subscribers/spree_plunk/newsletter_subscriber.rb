@@ -66,10 +66,12 @@ module SpreePlunk
     end
 
     def plunk_integration(event)
-      store_id = event.store_id.presence || ::Spree::Store.default&.id
-      return if store_id.blank?
+      [event.store_id.presence, ::Spree::Store.default&.id].compact.uniq.each do |store_id|
+        integration = ::Spree::Integrations::Plunk.find_by(store_id: store_id)
+        return integration if integration
+      end
 
-      ::Spree::Integrations::Plunk.find_by(store_id: store_id)
+      nil
     end
   end
 end

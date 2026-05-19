@@ -7,8 +7,8 @@ en:
         preferred_plunk_public_api_key: Public API Key
         preferred_default_from_email: Default Sender Email
         preferred_default_from_name: Default Sender Name
-        preferred_unsubscribe_webhook_enabled: Enable Unsubscribe Webhook
-        preferred_unsubscribe_webhook_authorization_token: Unsubscribe Webhook Authorization Token
+        preferred_unsubscribe_webhook_enabled: Enable Subscription Webhook
+        preferred_unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token
     errors:
       models:
         spree/integrations/plunk:
@@ -38,5 +38,5 @@ en:
           plunk_public_api_key: Public API Key
           default_from_email: Default Sender Email
           default_from_name: Default Sender Name
-          unsubscribe_webhook_enabled: Enable Unsubscribe Webhook
-          unsubscribe_webhook_authorization_token: Unsubscribe Webhook Authorization Token
+          unsubscribe_webhook_enabled: Enable Subscription Webhook
+          unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token

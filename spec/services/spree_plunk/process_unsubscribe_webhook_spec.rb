@@ -31,6 +31,19 @@ RSpec.describe SpreePlunk::ProcessUnsubscribeWebhook do
     expect(result).to be_success
   end
 
+  it 'delegates subscribe application through the local service' do
+    expect(SpreePlunk::ApplyLocalSubscribe).to receive(:call)
+      .with(email: 'newsletter@example.com')
+      .and_return(Spree::ServiceModule::Result.new(true, { subscribed: true }))
+
+    result = described_class.call(
+      plunk_integration: integration,
+      payload: { contact: { email: 'newsletter@example.com', subscribed: true } }
+    )
+
+    expect(result).to be_success
+  end
+
   it 'accepts a custom event-name payload when it explicitly identifies contact.unsubscribed' do
     allow(SpreePlunk::ApplyLocalUnsubscribe).to receive(:call)
       .and_return(Spree::ServiceModule::Result.new(true, { unsubscribed: true }))
@@ -49,10 +62,28 @@ RSpec.describe SpreePlunk::ProcessUnsubscribeWebhook do
     end
   end
 
-  it 'no-ops when the payload does not prove unsubscribe semantics' do
+  it 'accepts a custom event-name payload when it explicitly identifies contact.subscribed' do
+    allow(SpreePlunk::ApplyLocalSubscribe).to receive(:call)
+      .and_return(Spree::ServiceModule::Result.new(true, { subscribed: true }))
+
     result = described_class.call(
       plunk_integration: integration,
-      payload: { contact: { email: 'newsletter@example.com', subscribed: true } }
+      payload: {
+        email: 'newsletter@example.com',
+        event_name: 'contact.subscribed'
+      }
+    )
+
+    aggregate_failures do
+      expect(result).to be_success
+      expect(SpreePlunk::ApplyLocalSubscribe).to have_received(:call).with(email: 'newsletter@example.com')
+    end
+  end
+
+  it 'no-ops when the payload does not prove contact subscription semantics' do
+    result = described_class.call(
+      plunk_integration: integration,
+      payload: { contact: { email: 'newsletter@example.com' }, event_name: 'workflow.completed' }
     )
 
     aggregate_failures do

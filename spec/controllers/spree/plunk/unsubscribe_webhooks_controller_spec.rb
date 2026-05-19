@@ -56,6 +56,25 @@ RSpec.describe Spree::Plunk::UnsubscribeWebhooksController, type: :controller do
       end
     end
 
+    it 'acknowledges a valid subscribe payload and restores the local subscriber state' do
+      user = create(:user, email: 'newsletter@example.com', accepts_email_marketing: false)
+      request.headers['Authorization'] = 'Bearer whsec_test'
+
+      post :create, params: {
+        integration_id: integration.to_param,
+        contact: { email: user.email, subscribed: true }
+      }, as: :json
+
+      subscriber = Spree::NewsletterSubscriber.find_by(email: user.email)
+
+      aggregate_failures do
+        expect(response).to have_http_status(:ok)
+        expect(subscriber).to be_present
+        expect(subscriber).to be_verified
+        expect(user.reload.accepts_email_marketing).to be(true)
+      end
+    end
+
     it 'returns ok for unmatched emails so the intake stays safely idempotent' do
       request.headers['Authorization'] = 'Bearer whsec_test'
 

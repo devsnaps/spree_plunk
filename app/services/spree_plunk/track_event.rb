@@ -57,6 +57,8 @@ module SpreePlunk
         resource.order&.user
       when ::Spree::Reimbursement
         resource.order&.user
+      when Hash
+        resolve_snapshot_user(resource)
       end
     end
 
@@ -74,6 +76,8 @@ module SpreePlunk
         resource.address || resource.order&.bill_address || resource.order&.ship_address
       when ::Spree::Reimbursement
         resource.order&.bill_address || resource.order&.ship_address
+      when Hash
+        resolve_snapshot_order(resource)&.bill_address || resolve_snapshot_order(resource)&.ship_address
       end
     end
 
@@ -84,7 +88,7 @@ module SpreePlunk
       when ::Spree::Order
         resource.email
       when ::Spree::LineItem
-        resource.order&.email
+        resource.order&.email.presence || resource.order&.user&.email
       when ::Spree::Shipment
         resource.order&.email
       when ::Spree::Reimbursement
@@ -92,6 +96,20 @@ module SpreePlunk
       when Hash
         resource['email']
       end
+    end
+
+    def resolve_snapshot_user(resource)
+      user_id = resource['user_id'] || resource[:user_id]
+      return if user_id.blank?
+
+      ::Spree.user_class.find_by(id: user_id)
+    end
+
+    def resolve_snapshot_order(resource)
+      order_id = resource['order_record_id'] || resource[:order_record_id]
+      return if order_id.blank?
+
+      ::Spree::Order.find_by(id: order_id)
     end
 
     def subscription_state_for(event_name)

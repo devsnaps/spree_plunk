@@ -33,10 +33,21 @@ module SpreePlunk
         ShipmentPresenter.new(shipment: resource, store: store).call
       when ::Spree::Reimbursement
         ReimbursementPresenter.new(reimbursement: resource, store: store).call
-      when ::Spree::NewsletterSubscriber, Hash
+      when ::Spree::NewsletterSubscriber
         NewsletterSubscriberPresenter.new(subscriber: resource, store: store).call
+      when Hash
+        hash_event_data
       else
         {}
+      end
+    end
+
+    def hash_event_data
+      case event_name
+      when SpreePlunk::EventNames::CART_ADDED, SpreePlunk::EventNames::CART_REMOVED
+        LineItemPresenter.new(line_item: resource, store: store, email: email).call
+      else
+        NewsletterSubscriberPresenter.new(subscriber: resource, store: store).call
       end
     end
   end

@@ -1,6 +1,5 @@
 module SpreePlunk
   class AnalyticsEventHandler < ::Spree::BaseAnalyticsEventHandler
-    CART_EVENT_NAMES = %w[product_added product_removed].freeze
     ORDER_EVENT_NAMES = %w[
       checkout_email_entered
       checkout_step_viewed
@@ -40,22 +39,15 @@ module SpreePlunk
     private
 
     def resource_for(event_name, properties)
-      if CART_EVENT_NAMES.include?(event_name.to_s)
-        property(properties, :line_item)
-      elsif ORDER_EVENT_NAMES.include?(event_name.to_s)
+      if ORDER_EVENT_NAMES.include?(event_name.to_s)
         property(properties, :order)
       end
     end
 
     def email_for(event_name, properties)
       return property(properties, :email).presence || order_email(properties) || user&.email.presence if event_name.to_s == 'checkout_email_entered'
-      return line_item_order_email(properties) || user&.email.presence if CART_EVENT_NAMES.include?(event_name.to_s)
 
       order_email(properties) || user&.email.presence
-    end
-
-    def line_item_order_email(properties)
-      property(properties, :line_item)&.order&.email.presence
     end
 
     def order_email(properties)

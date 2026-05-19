@@ -124,6 +124,54 @@ RSpec.describe SpreePlunk::TrackEvent do
     end
   end
 
+  context 'when tracking a cart event from a payload snapshot' do
+    let(:event_name) { SpreePlunk::EventNames::CART_ADDED }
+    let(:order_resource) { create(:order, store: store, user: user, email: nil) }
+    let(:resource) do
+      {
+        'email' => user.email,
+        'user_id' => user.id,
+        'order_record_id' => order_resource.id,
+        'line_item_id' => 'li_123',
+        'order_id' => order_resource.prefixed_id,
+        'order_number' => order_resource.number,
+        'quantity' => 2,
+        'unit_price' => 19.99,
+        'line_item_total' => 39.98,
+        'currency' => order_resource.currency,
+        'product_name' => 'Product 1',
+        'sku' => 'SKU-1'
+      }
+    end
+    let(:email) { user.email }
+
+    it 'reuses the snapshot user and order context when ensuring the contact exists' do
+      expect(SpreePlunk::UpsertContact).to receive(:call).with(
+        hash_including(
+          user: user,
+          address: order_resource.bill_address || order_resource.ship_address,
+          email: user.email,
+          subscribed: nil
+        )
+      ).and_return(contact_result)
+
+      expect(plunk_integration).to receive(:track_event).with(
+        hash_including(
+          name: SpreePlunk::EventNames::CART_ADDED,
+          contactId: 'cnt_123',
+          data: hash_including(
+            line_item_id: 'li_123',
+            order_id: order_resource.prefixed_id,
+            email: user.email,
+            quantity: 2
+          )
+        )
+      ).and_return(track_result)
+
+      expect(result).to be_success
+    end
+  end
+
   context 'when tracking a reimbursement event' do
     let(:event_name) { SpreePlunk::EventNames::REIMBURSEMENT_PAID }
     let(:resource) do

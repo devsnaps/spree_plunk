@@ -6,8 +6,6 @@ RSpec.describe SpreePlunk::AnalyticsEventHandler do
   let(:store) { create(:store) }
   let(:user) { create(:user, email: 'user@example.com') }
   let(:order) { create(:order, user: user, store: store, email: 'order@example.com') }
-  let(:product) { create(:product, stores: [store]) }
-  let(:line_item) { create(:line_item, order: order, product: product) }
   let!(:plunk_integration) { create(:plunk_integration, store: store, active: true) }
 
   subject(:handler) { described_class.new(user: user, store: store) }
@@ -18,30 +16,6 @@ RSpec.describe SpreePlunk::AnalyticsEventHandler do
 
   it 'is registered as a storefront analytics handler' do
     expect(Rails.application.config.spree.analytics_event_handlers).to include(described_class)
-  end
-
-  it 'enqueues cart tracking for product_added' do
-    expect {
-      handler.handle_event('product_added', { line_item: line_item })
-    }.to have_enqueued_job(SpreePlunk::TrackEventJob).with(
-      plunk_integration.id,
-      SpreePlunk::EventNames::CART_ADDED,
-      Spree::LineItem.name,
-      line_item.id,
-      order.email
-    )
-  end
-
-  it 'enqueues cart tracking for product_removed' do
-    expect {
-      handler.handle_event('product_removed', { line_item: line_item })
-    }.to have_enqueued_job(SpreePlunk::TrackEventJob).with(
-      plunk_integration.id,
-      SpreePlunk::EventNames::CART_REMOVED,
-      Spree::LineItem.name,
-      line_item.id,
-      order.email
-    )
   end
 
   it 'enqueues checkout email tracking with the explicit email override' do
@@ -82,7 +56,7 @@ RSpec.describe SpreePlunk::AnalyticsEventHandler do
 
   it 'returns early when the primary event resource is missing' do
     expect {
-      handler.handle_event('product_added', {})
+      handler.handle_event('coupon_applied', {})
     }.not_to have_enqueued_job(SpreePlunk::TrackEventJob)
   end
 
@@ -99,7 +73,7 @@ RSpec.describe SpreePlunk::AnalyticsEventHandler do
     plunk_integration.update!(active: false)
 
     expect {
-      handler.handle_event('product_added', { line_item: line_item })
+      handler.handle_event('coupon_applied', { order: order })
     }.not_to have_enqueued_job(SpreePlunk::TrackEventJob)
   end
 end

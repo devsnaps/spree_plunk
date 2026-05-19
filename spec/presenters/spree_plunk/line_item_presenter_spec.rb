@@ -27,4 +27,40 @@ RSpec.describe SpreePlunk::LineItemPresenter do
       sku: line_item.sku
     )
   end
+
+  it 'builds cart event data from a line-item payload snapshot' do
+    payload = {
+      'line_item_id' => 'li_123',
+      'order_id' => 'or_123',
+      'order_number' => 'R123456',
+      'store_code' => 'default-store',
+      'email' => 'buyer@example.com',
+      'quantity' => 2,
+      'unit_price' => 19.99,
+      'line_item_total' => 39.98,
+      'currency' => 'USD',
+      'variant_id' => 'variant_123',
+      'product_id' => 'product_123',
+      'product_name' => 'Product 1',
+      'sku' => 'SKU-1'
+    }
+
+    result = described_class.new(line_item: payload, store: store).call
+
+    expect(result).to include(
+      line_item_id: 'li_123',
+      order_id: 'or_123',
+      order_number: 'R123456',
+      store_code: 'default-store',
+      email: 'buyer@example.com',
+      quantity: 2,
+      unit_price: 19.99,
+      line_item_total: 39.98,
+      currency: 'USD',
+      variant_id: 'variant_123',
+      product_id: 'product_123',
+      product_name: 'Product 1',
+      sku: 'SKU-1'
+    )
+  end
 end

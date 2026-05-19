@@ -39,7 +39,7 @@ module SpreePlunk
     end
 
     def resolved_email
-      email.presence || order.email
+      email.presence || order.email.presence || order.user&.email
     end
 
     def iso8601(value)

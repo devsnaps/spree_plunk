@@ -91,5 +91,46 @@ RSpec.describe SpreePlunk::EventPresenter do
         )
       end
     end
+
+    context 'with storefront order payload data' do
+      let(:resource) do
+        {
+          'order_id' => 'or_123',
+          'order_number' => 'R123456',
+          'store_code' => 'default-store',
+          'email' => 'checkout@example.com',
+          'checkout_step' => 'payment',
+          'previous_checkout_step' => 'delivery',
+          'current_checkout_step' => 'payment',
+          'coupon_code' => 'save10',
+          'coupon_status_code' => 'coupon_code_applied'
+        }
+      end
+
+      it 'builds a Plunk event payload from a checkout or coupon snapshot hash' do
+        payload = described_class.new(
+          event_name: SpreePlunk::EventNames::COUPON_APPLIED,
+          contact_id: 'cnt_999',
+          resource: resource,
+          store: store
+        ).call
+
+        expect(payload).to include(
+          name: SpreePlunk::EventNames::COUPON_APPLIED,
+          contactId: 'cnt_999'
+        )
+        expect(payload[:data]).to include(
+          order_id: 'or_123',
+          order_number: 'R123456',
+          store_code: 'default-store',
+          email: 'checkout@example.com',
+          checkout_step: 'payment',
+          previous_checkout_step: 'delivery',
+          current_checkout_step: 'payment',
+          coupon_code: 'save10',
+          coupon_status_code: 'coupon_code_applied'
+        )
+      end
+    end
   end
 end

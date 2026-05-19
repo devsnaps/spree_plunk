@@ -4,6 +4,7 @@ Rails.application.config.after_initialize do
   Spree.subscribers << SpreePlunk::CartSubscriber
   Spree.subscribers << SpreePlunk::ContactSubscriber
   Spree.subscribers << SpreePlunk::NewsletterSubscriber
+  Spree.subscribers << SpreePlunk::StorefrontOrderSubscriber
   Spree.subscribers << SpreePlunk::OrderSubscriber
   Spree.subscribers << SpreePlunk::ShipmentSubscriber
   Spree.subscribers << SpreePlunk::ReimbursementSubscriber

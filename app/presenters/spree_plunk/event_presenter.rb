@@ -46,6 +46,14 @@ module SpreePlunk
       case event_name
       when SpreePlunk::EventNames::CART_ADDED, SpreePlunk::EventNames::CART_REMOVED
         LineItemPresenter.new(line_item: resource, store: store, email: email).call
+      when SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED,
+           SpreePlunk::EventNames::CHECKOUT_STEP_VIEWED,
+           SpreePlunk::EventNames::CHECKOUT_STEP_COMPLETED,
+           SpreePlunk::EventNames::COUPON_ENTERED,
+           SpreePlunk::EventNames::COUPON_REMOVED,
+           SpreePlunk::EventNames::COUPON_APPLIED,
+           SpreePlunk::EventNames::COUPON_DENIED
+        StorefrontOrderEventPresenter.new(payload: resource, store: store, email: email).call
       else
         NewsletterSubscriberPresenter.new(subscriber: resource, store: store).call
       end

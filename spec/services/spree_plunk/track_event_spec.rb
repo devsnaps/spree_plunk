@@ -172,6 +172,49 @@ RSpec.describe SpreePlunk::TrackEvent do
     end
   end
 
+  context 'when tracking a checkout event from a payload snapshot' do
+    let(:event_name) { SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED }
+    let(:order_resource) { create(:order, store: store, user: user, email: nil) }
+    let(:resource) do
+      {
+        'email' => user.email,
+        'user_id' => user.id,
+        'store_id' => store.id,
+        'order_record_id' => order_resource.id,
+        'order_id' => order_resource.prefixed_id,
+        'order_number' => order_resource.number,
+        'checkout_step' => 'address',
+        'current_checkout_step' => 'address'
+      }
+    end
+    let(:email) { user.email }
+
+    it 'reuses the snapshot user and order context when ensuring the checkout contact exists' do
+      expect(SpreePlunk::UpsertContact).to receive(:call).with(
+        hash_including(
+          user: user,
+          address: order_resource.bill_address || order_resource.ship_address,
+          email: user.email,
+          subscribed: nil
+        )
+      ).and_return(contact_result)
+
+      expect(plunk_integration).to receive(:track_event).with(
+        hash_including(
+          name: SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED,
+          contactId: 'cnt_123',
+          data: hash_including(
+            order_id: order_resource.prefixed_id,
+            email: user.email,
+            checkout_step: 'address'
+          )
+        )
+      ).and_return(track_result)
+
+      expect(result).to be_success
+    end
+  end
+
   context 'when tracking a reimbursement event' do
     let(:event_name) { SpreePlunk::EventNames::REIMBURSEMENT_PAID }
     let(:resource) do

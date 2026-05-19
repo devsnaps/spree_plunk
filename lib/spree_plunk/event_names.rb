@@ -16,17 +16,7 @@ module SpreePlunk
     SHIPMENT_SHIPPED = 'spree.shipment.shipped'.freeze
     REIMBURSEMENT_PAID = 'spree.reimbursement.paid'.freeze
 
-    STOREFRONT_ANALYTICS_EVENT_MAP = {
-      'product_added' => CART_ADDED,
-      'product_removed' => CART_REMOVED,
-      'checkout_email_entered' => CHECKOUT_EMAIL_ENTERED,
-      'checkout_step_viewed' => CHECKOUT_STEP_VIEWED,
-      'checkout_step_completed' => CHECKOUT_STEP_COMPLETED,
-      'coupon_entered' => COUPON_ENTERED,
-      'coupon_removed' => COUPON_REMOVED,
-      'coupon_applied' => COUPON_APPLIED,
-      'coupon_denied' => COUPON_DENIED
-    }.freeze
+    STOREFRONT_ANALYTICS_EVENT_MAP = {}.freeze
 
     def self.storefront_analytics_event_name(event_name)
       STOREFRONT_ANALYTICS_EVENT_MAP[event_name.to_s]

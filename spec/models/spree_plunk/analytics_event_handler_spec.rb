@@ -18,40 +18,22 @@ RSpec.describe SpreePlunk::AnalyticsEventHandler do
     expect(Rails.application.config.spree.analytics_event_handlers).to include(described_class)
   end
 
-  it 'enqueues checkout email tracking with the explicit email override' do
+  it 'ignores checkout events because they are sourced from server-side services' do
     expect {
       handler.handle_event('checkout_email_entered', { order: order, email: 'checkout@example.com' })
-    }.to have_enqueued_job(SpreePlunk::TrackEventJob).with(
-      plunk_integration.id,
-      SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED,
-      Spree::Order.name,
-      order.id,
-      'checkout@example.com'
-    )
+    }.not_to have_enqueued_job(SpreePlunk::TrackEventJob)
   end
 
-  it 'enqueues coupon tracking for order-backed events' do
+  it 'ignores coupon events because they are sourced from the coupon handler lifecycle' do
     expect {
       handler.handle_event('coupon_applied', { order: order })
-    }.to have_enqueued_job(SpreePlunk::TrackEventJob).with(
-      plunk_integration.id,
-      SpreePlunk::EventNames::COUPON_APPLIED,
-      Spree::Order.name,
-      order.id,
-      order.email
-    )
+    }.not_to have_enqueued_job(SpreePlunk::TrackEventJob)
   end
 
-  it 'enqueues checkout-step tracking for order-backed events' do
+  it 'ignores checkout step events because they are sourced from checkout services' do
     expect {
       handler.handle_event('checkout_step_completed', { order: order })
-    }.to have_enqueued_job(SpreePlunk::TrackEventJob).with(
-      plunk_integration.id,
-      SpreePlunk::EventNames::CHECKOUT_STEP_COMPLETED,
-      Spree::Order.name,
-      order.id,
-      order.email
-    )
+    }.not_to have_enqueued_job(SpreePlunk::TrackEventJob)
   end
 
   it 'returns early when the primary event resource is missing' do

@@ -13,7 +13,8 @@ RSpec.describe SpreePlunk::EventPresenter do
           event_name: SpreePlunk::EventNames::ORDER_COMPLETED,
           contact_id: 'cnt_123',
           resource: order,
-          store: store
+          store: store,
+          email: 'checkout@example.com'
         ).call
 
         expect(payload).to include(
@@ -24,7 +25,37 @@ RSpec.describe SpreePlunk::EventPresenter do
           order_id: order.prefixed_id,
           order_number: order.number,
           store_code: 'default-store',
-          email: order.email
+          email: 'checkout@example.com',
+          checkout_step: order.state
+        )
+      end
+    end
+
+    context 'with a line item resource' do
+      let(:user) { create(:user, email: 'buyer@example.com') }
+      let(:order) { create(:order, store: store, user: user, email: user.email) }
+      let(:product) { create(:product, stores: [store]) }
+      let(:line_item) { create(:line_item, order: order, product: product, quantity: 2, price: 19.99, currency: 'USD') }
+
+      it 'builds a Plunk event payload with line-item cart data' do
+        payload = described_class.new(
+          event_name: SpreePlunk::EventNames::CART_ADDED,
+          contact_id: 'cnt_789',
+          resource: line_item,
+          store: store
+        ).call
+
+        expect(payload).to include(
+          name: SpreePlunk::EventNames::CART_ADDED,
+          contactId: 'cnt_789'
+        )
+        expect(payload[:data]).to include(
+          line_item_id: line_item.prefixed_id,
+          order_id: order.prefixed_id,
+          order_number: order.number,
+          store_code: 'default-store',
+          email: 'buyer@example.com',
+          quantity: 2
         )
       end
     end

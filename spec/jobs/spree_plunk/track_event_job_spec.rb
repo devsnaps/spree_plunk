@@ -30,6 +30,27 @@ RSpec.describe SpreePlunk::TrackEventJob, type: :job do
     )
   end
 
+  it 'reloads line items before delegating cart tracking' do
+    order = create(:order, store: store, email: 'buyer@example.com')
+    product = create(:product, stores: [store])
+    line_item = create(:line_item, order: order, product: product, quantity: 2, price: 19.99, currency: 'USD')
+
+    expect(SpreePlunk::TrackEvent).to receive(:call).with(
+      plunk_integration: integration,
+      event_name: SpreePlunk::EventNames::CART_ADDED,
+      resource: line_item,
+      email: order.email
+    ).and_return(Spree::ServiceModule::Result.new(true, { 'id' => 'evt_123' }))
+
+    described_class.perform_now(
+      integration.id,
+      SpreePlunk::EventNames::CART_ADDED,
+      Spree::LineItem.name,
+      line_item.id,
+      order.email
+    )
+  end
+
   it 'reloads reimbursements before delegating to event tracking' do
     reimbursement = create(:reimbursement)
 

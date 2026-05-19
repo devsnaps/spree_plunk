@@ -87,6 +87,43 @@ RSpec.describe SpreePlunk::TrackEvent do
     end
   end
 
+  context 'when tracking a cart event from a line item' do
+    let(:event_name) { SpreePlunk::EventNames::CART_ADDED }
+    let(:resource) do
+      order = create(:order, store: store, user: user, email: user.email)
+      product = create(:product, stores: [store])
+
+      create(:line_item, order: order, product: product, quantity: 2, price: 19.99, currency: 'USD')
+    end
+
+    it 'ensures the cart contact using the line-item order context and sends cart payload data' do
+      expect(SpreePlunk::UpsertContact).to receive(:call).with(
+        hash_including(
+          plunk_integration: plunk_integration,
+          user: resource.order.user,
+          address: resource.order.bill_address || resource.order.ship_address,
+          email: resource.order.email,
+          subscribed: nil
+        )
+      ).and_return(contact_result)
+
+      expect(plunk_integration).to receive(:track_event).with(
+        hash_including(
+          name: SpreePlunk::EventNames::CART_ADDED,
+          contactId: 'cnt_123',
+          data: hash_including(
+            line_item_id: resource.prefixed_id,
+            order_id: resource.order.prefixed_id,
+            email: resource.order.email,
+            quantity: resource.quantity
+          )
+        )
+      ).and_return(track_result)
+
+      expect(result).to be_success
+    end
+  end
+
   context 'when tracking a reimbursement event' do
     let(:event_name) { SpreePlunk::EventNames::REIMBURSEMENT_PAID }
     let(:resource) do
@@ -139,6 +176,32 @@ RSpec.describe SpreePlunk::TrackEvent do
       ).and_return(contact_result)
 
       expect(plunk_integration).to receive(:track_event).and_return(track_result)
+
+      expect(result).to be_success
+    end
+  end
+
+  context 'when tracking checkout email entry with an explicit email override' do
+    let(:event_name) { SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED }
+    let(:email) { 'checkout@example.com' }
+
+    it 'uses the explicit email for contact ensure-upsert and payload generation' do
+      expect(SpreePlunk::UpsertContact).to receive(:call).with(
+        hash_including(
+          user: resource.user,
+          address: resource.bill_address,
+          email: 'checkout@example.com',
+          subscribed: nil
+        )
+      ).and_return(contact_result)
+
+      expect(plunk_integration).to receive(:track_event).with(
+        hash_including(
+          name: SpreePlunk::EventNames::CHECKOUT_EMAIL_ENTERED,
+          contactId: 'cnt_123',
+          data: hash_including(email: 'checkout@example.com')
+        )
+      ).and_return(track_result)
 
       expect(result).to be_success
     end

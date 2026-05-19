@@ -25,7 +25,8 @@ module SpreePlunk
         event_name: event_name,
         contact_id: contact_id,
         resource: resource,
-        store: plunk_integration.store
+        store: plunk_integration.store,
+        email: resolved_email
       ).call
 
       plunk_integration.track_event(payload)
@@ -50,6 +51,8 @@ module SpreePlunk
         resource.user
       when ::Spree::Order
         resource.user
+      when ::Spree::LineItem
+        resource.order&.user
       when ::Spree::Shipment
         resource.order&.user
       when ::Spree::Reimbursement
@@ -65,6 +68,8 @@ module SpreePlunk
       case resource
       when ::Spree::Order
         resource.bill_address || resource.ship_address
+      when ::Spree::LineItem
+        resource.order&.bill_address || resource.order&.ship_address
       when ::Spree::Shipment
         resource.address || resource.order&.bill_address || resource.order&.ship_address
       when ::Spree::Reimbursement
@@ -78,6 +83,8 @@ module SpreePlunk
         resource.email
       when ::Spree::Order
         resource.email
+      when ::Spree::LineItem
+        resource.order&.email
       when ::Spree::Shipment
         resource.order&.email
       when ::Spree::Reimbursement

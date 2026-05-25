@@ -8,4 +8,5 @@ Rails.application.config.after_initialize do
   Spree.subscribers << SpreePlunk::OrderSubscriber
   Spree.subscribers << SpreePlunk::ShipmentSubscriber
   Spree.subscribers << SpreePlunk::ReimbursementSubscriber
+  Spree.subscribers << SpreePlunk::TransactionalEmailSubscriber
 end

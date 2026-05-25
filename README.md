@@ -202,8 +202,8 @@ The current admin form exposes these fields.
 - Password reset payloads include `reset_token` and `reset_url` as non-persistent Plunk data.
 - Newsletter confirmation payloads include `verification_token`, `verification_url`, and `confirmation_url` as non-persistent Plunk data.
 - Order confirmation, cancellation, store owner notification, and payment link payloads include non-persistent order template data such as order number, customer identity, line item fragments, totals, addresses, shipment summaries, completion time, cancellation time, and store URL.
-- Shipment payloads include shipment number, order number, tracking, shipping method, stock location, cost, totals, and shipped time.
-- Reimbursement payloads include reimbursement number, order number, reimbursement status, amounts, and return item count.
+- Shipment payloads include non-persistent shipment template data such as shipment number, order number, tracking, tracking URL, shipping method, stock location, costs, shipped time, shipped item fragments, and store URL.
+- Reimbursement payloads include non-persistent reimbursement template data such as reimbursement number, order number, status, refund amounts, return item fragments, exchange item fragments, expedited exchange flags, and store URL.
 - Payment link payloads include the payment URL as non-persistent Plunk data.
 - Localhost storefront URLs are acceptable in test links, but the sender email domain must be verified in Plunk even for local testing.
 
@@ -243,6 +243,36 @@ Useful variables include:
 - `{{payment_url}}` for payment link emails
 
 The HTML fragments are pre-rendered by `spree_plunk` because Plunk's current template replacement is variable-based and is not a full loop/template language. The same payload also includes structured `line_items`, `totals`, `shipments`, `shipping_address`, and `billing_address` values for future workflow/API use. Order-backed transactional data is sent as non-persistent Plunk data so receipts do not overwrite long-lived contact profile fields.
+
+### Plunk Template Variables For Shipment Emails
+
+Shipment shipped emails expose top-level Plunk variables. Useful variables include:
+
+- `{{store_name}}`, `{{store_code}}`, `{{store_url}}`
+- `{{recipient_email}}`, `{{customer_email}}`, `{{customer_name}}`
+- `{{order_number}}`, `{{order_total}}`
+- `{{shipment_number}}`, `{{shipment_state}}`, `{{shipped_at}}`
+- `{{shipping_method}}`, `{{stock_location_name}}`
+- `{{tracking}}`, `{{tracking_url}}`, `{{tracking_link_html}}`
+- `{{cost_display}}`, `{{total_display}}`, `{{discount_total_display}}`
+- `{{shipment_items_html}}` or `{{shipment_items_text}}`
+
+The same payload also includes structured `shipment_items` for future API/workflow use. Shipment template data is sent as non-persistent Plunk data.
+
+### Plunk Template Variables For Reimbursement Emails
+
+Reimbursement emails expose top-level Plunk variables. Useful variables include:
+
+- `{{store_name}}`, `{{store_code}}`, `{{store_url}}`
+- `{{recipient_email}}`, `{{customer_email}}`, `{{customer_name}}`
+- `{{order_number}}`, `{{order_total}}`
+- `{{reimbursement_number}}`, `{{reimbursement_status}}`, `{{reimbursement_total_display}}`
+- `{{paid_amount_display}}`, `{{unpaid_amount_display}}`
+- `{{return_items_html}}` or `{{return_items_text}}`
+- `{{exchange_items_html}}` or `{{exchange_items_text}}`
+- `{{awaiting_return_items_count}}`, `{{expedited_exchanges}}`, `{{expedited_exchanges_days_window}}`
+
+The same payload also includes structured `return_items` and `exchange_items` values for future API/workflow use. Reimbursement template data is sent as non-persistent Plunk data.
 
 ## API Strategy
 

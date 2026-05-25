@@ -13,14 +13,16 @@ RSpec.describe SpreePlunk::ShipmentShippedEmailPresenter do
     aggregate_failures do
       expect(payload[:to]).to eq('buyer@example.com')
       expect(payload[:template]).to eq('tpl_shipped')
-      expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::SHIPMENT_SHIPPED,
-        store_name: 'Example Store',
-        shipment_number: shipment.number,
-        tracking: 'TRACK123',
-        shipped_at: '2026-05-25T08:00:00Z',
-        recipient_email: 'buyer@example.com'
-      )
+      expect(payload[:data][:email_type]).to eq(non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::SHIPMENT_SHIPPED))
+      expect(plunk_data_value(payload[:data], :store_name)).to eq('Example Store')
+      expect(plunk_data_value(payload[:data], :shipment_number)).to eq(shipment.number)
+      expect(plunk_data_value(payload[:data], :tracking)).to eq('TRACK123')
+      expect(plunk_data_value(payload[:data], :shipped_at)).to eq('2026-05-25T08:00:00Z')
+      expect(plunk_data_value(payload[:data], :recipient_email)).to eq('buyer@example.com')
+      expect(plunk_data_value(payload[:data], :shipment_items)).not_to be_empty
+      expect(plunk_data_value(payload[:data], :shipment_items_html)).to include('<table')
+      expect(plunk_data_value(payload[:data], :shipment_items_text)).to include('x ')
+      expect(plunk_data_value(payload[:data], :order_total)).to be_present
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::SHIPMENT_SHIPPED)
     end
   end

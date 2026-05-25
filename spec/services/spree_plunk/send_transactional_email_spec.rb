@@ -195,9 +195,11 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
       expect(a_request(:post, 'https://next-api.useplunk.com/v1/send').with { |request|
         body = JSON.parse(request.body)
 
-        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::SHIPMENT_SHIPPED)
-        expect(body.dig('data', 'shipment_number')).to eq(resource.number)
-        expect(body.dig('data', 'recipient_email')).to eq('buyer@example.com')
+        expect(plunk_data_value(body['data'], 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::SHIPMENT_SHIPPED)
+        expect(plunk_data_value(body['data'], 'shipment_number')).to eq(resource.number)
+        expect(plunk_data_value(body['data'], 'recipient_email')).to eq('buyer@example.com')
+        expect(plunk_data_value(body['data'], 'shipment_items_html')).to include('<table')
+        expect(plunk_data_value(body['data'], 'shipment_items')).not_to be_empty
         true
       }).to have_been_made
     end
@@ -221,9 +223,11 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
       expect(a_request(:post, 'https://next-api.useplunk.com/v1/send').with { |request|
         body = JSON.parse(request.body)
 
-        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::REIMBURSEMENT)
-        expect(body.dig('data', 'reimbursement_number')).to eq(resource.number)
-        expect(body.dig('data', 'recipient_email')).to eq('buyer@example.com')
+        expect(plunk_data_value(body['data'], 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::REIMBURSEMENT)
+        expect(plunk_data_value(body['data'], 'reimbursement_number')).to eq(resource.number)
+        expect(plunk_data_value(body['data'], 'recipient_email')).to eq('buyer@example.com')
+        expect(plunk_data_value(body['data'], 'return_items_html')).to include('<table')
+        expect(plunk_data_value(body['data'], 'return_items')).not_to be_empty
         true
       }).to have_been_made
     end

@@ -14,13 +14,15 @@ RSpec.describe SpreePlunk::ReimbursementNotificationEmailPresenter do
     aggregate_failures do
       expect(payload[:to]).to eq('buyer@example.com')
       expect(payload[:template]).to eq('tpl_reimbursement')
-      expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::REIMBURSEMENT,
-        store_name: 'Example Store',
-        reimbursement_number: reimbursement.number,
-        order_number: reimbursement.order.number,
-        recipient_email: 'buyer@example.com'
-      )
+      expect(payload[:data][:email_type]).to eq(non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::REIMBURSEMENT))
+      expect(plunk_data_value(payload[:data], :store_name)).to eq('Example Store')
+      expect(plunk_data_value(payload[:data], :reimbursement_number)).to eq(reimbursement.number)
+      expect(plunk_data_value(payload[:data], :order_number)).to eq(reimbursement.order.number)
+      expect(plunk_data_value(payload[:data], :recipient_email)).to eq('buyer@example.com')
+      expect(plunk_data_value(payload[:data], :reimbursement_total_display)).to be_present
+      expect(plunk_data_value(payload[:data], :return_items)).not_to be_empty
+      expect(plunk_data_value(payload[:data], :return_items_html)).to include('<table')
+      expect(plunk_data_value(payload[:data], :return_items_text)).to include('x ')
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::REIMBURSEMENT)
     end
   end

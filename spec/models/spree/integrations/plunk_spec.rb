@@ -25,7 +25,9 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         preferred_order_confirmation_template_id: ' tpl_order ',
         preferred_order_cancellation_template_id: ' tpl_cancel ',
         preferred_shipment_shipped_template_id: ' tpl_shipment ',
-        preferred_reimbursement_template_id: ' tpl_reimbursement '
+        preferred_reimbursement_template_id: ' tpl_reimbursement ',
+        preferred_store_owner_notification_template_id: ' tpl_owner ',
+        preferred_payment_link_template_id: ' tpl_payment '
       )
 
       integration.valid?
@@ -43,6 +45,8 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         expect(integration.preferred_order_cancellation_template_id).to eq('tpl_cancel')
         expect(integration.preferred_shipment_shipped_template_id).to eq('tpl_shipment')
         expect(integration.preferred_reimbursement_template_id).to eq('tpl_reimbursement')
+        expect(integration.preferred_store_owner_notification_template_id).to eq('tpl_owner')
+        expect(integration.preferred_payment_link_template_id).to eq('tpl_payment')
       end
     end
 

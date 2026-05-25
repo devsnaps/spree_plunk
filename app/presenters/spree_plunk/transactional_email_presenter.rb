@@ -6,6 +6,7 @@ module SpreePlunk
   class TransactionalEmailPresenter
     SENSITIVE_DATA_KEYS = %i[
       confirmation_url
+      payment_url
       reset_token
       reset_url
       verification_token

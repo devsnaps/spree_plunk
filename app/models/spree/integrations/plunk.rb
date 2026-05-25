@@ -33,6 +33,10 @@ module Spree
       preference :shipment_shipped_template_id, :string
       preference :reimbursement_email_enabled, :boolean, default: false
       preference :reimbursement_template_id, :string
+      preference :store_owner_notification_email_enabled, :boolean, default: false
+      preference :store_owner_notification_template_id, :string
+      preference :payment_link_email_enabled, :boolean, default: false
+      preference :payment_link_template_id, :string
       preference :unsubscribe_webhook_enabled, :boolean, default: false
       preference :unsubscribe_webhook_authorization_token, :password
 
@@ -52,6 +56,8 @@ module Spree
       validates :preferred_order_cancellation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
       validates :preferred_shipment_shipped_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
       validates :preferred_reimbursement_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_store_owner_notification_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_payment_link_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
 
       validate :validate_plunk_base_url
       validate :validate_api_keys
@@ -124,6 +130,8 @@ module Spree
         self.preferred_order_cancellation_template_id = normalize_string(preferred_order_cancellation_template_id)
         self.preferred_shipment_shipped_template_id = normalize_string(preferred_shipment_shipped_template_id)
         self.preferred_reimbursement_template_id = normalize_string(preferred_reimbursement_template_id)
+        self.preferred_store_owner_notification_template_id = normalize_string(preferred_store_owner_notification_template_id)
+        self.preferred_payment_link_template_id = normalize_string(preferred_payment_link_template_id)
       end
 
       def normalize_string(value)

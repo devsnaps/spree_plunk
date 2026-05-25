@@ -24,6 +24,8 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
       preferred_order_cancellation_email_enabled: order_cancellation_enabled,
       preferred_shipment_shipped_email_enabled: shipment_shipped_enabled,
       preferred_reimbursement_email_enabled: reimbursement_enabled,
+      preferred_store_owner_notification_email_enabled: store_owner_notification_enabled,
+      preferred_payment_link_email_enabled: payment_link_enabled,
       preferred_default_from_email: 'plunk@example.com',
       preferred_default_from_name: 'Example Store'
     )
@@ -36,6 +38,8 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
   let(:order_cancellation_enabled) { false }
   let(:shipment_shipped_enabled) { false }
   let(:reimbursement_enabled) { false }
+  let(:store_owner_notification_enabled) { false }
+  let(:payment_link_enabled) { false }
   let(:email_type) { SpreePlunk::TransactionalEmailTypes::PASSWORD_RESET }
   let(:resource) { nil }
   let(:email) { 'buyer@example.com' }
@@ -220,6 +224,77 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
         expect(body.dig('data', 'recipient_email')).to eq('buyer@example.com')
         true
       }).to have_been_made
+    end
+  end
+
+  context 'when sending a store owner notification' do
+    let(:email_type) { SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION }
+    let(:store_owner_notification_enabled) { true }
+    let(:store) { create(:store, name: 'Example Store', mail_from_address: 'orders@example.com', new_order_notifications_email: 'owner@example.com') }
+    let(:user) { create(:user, email: 'buyer@example.com') }
+    let(:resource) { create(:completed_order_with_totals, store: store, user: user, email: user.email, store_owner_notification_delivered: false) }
+    let(:email) { store.new_order_notifications_email }
+
+    it 'sends the notification and marks it as delivered after Plunk accepts it' do
+      expect { result }.to change { resource.reload.store_owner_notification_delivered? }.from(false).to(true)
+
+      expect(a_request(:post, 'https://next-api.useplunk.com/v1/send').with { |request|
+        body = JSON.parse(request.body)
+
+        expect(body['to']).to eq('owner@example.com')
+        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION)
+        expect(body.dig('data', 'customer_email')).to eq('buyer@example.com')
+        true
+      }).to have_been_made
+    end
+  end
+
+  context 'when the store owner notification was already delivered' do
+    let(:email_type) { SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION }
+    let(:store_owner_notification_enabled) { true }
+    let(:store) { create(:store, name: 'Example Store', mail_from_address: 'orders@example.com', new_order_notifications_email: 'owner@example.com') }
+    let(:resource) { create(:completed_order_with_totals, store: store, store_owner_notification_delivered: true) }
+    let(:email) { store.new_order_notifications_email }
+
+    it 'skips the send to preserve Spree store owner notification idempotency' do
+      expect(result).to be_success
+      expect(result.value).to include(skipped: true, reason: 'store_owner_notification_already_delivered')
+      expect(a_request(:post, 'https://next-api.useplunk.com/v1/send')).not_to have_been_made
+    end
+  end
+
+  context 'when sending a payment link' do
+    let(:email_type) { SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK }
+    let(:payment_link_enabled) { true }
+    let(:user) { create(:user, email: 'buyer@example.com') }
+    let(:resource) { create(:order_with_line_items, store: store, user: user, email: user.email) }
+    let(:email) { resource.email }
+    let(:event_payload) { { 'payment_url' => "https://shop.example.com/checkout/#{resource.token}/payment" } }
+
+    it 'sends payment link data to Plunk without persisting the link as contact data' do
+      expect(result).to be_success
+
+      expect(a_request(:post, 'https://next-api.useplunk.com/v1/send').with { |request|
+        body = JSON.parse(request.body)
+
+        expect(body['to']).to eq('buyer@example.com')
+        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK)
+        expect(body.dig('data', 'payment_url')).to eq('value' => event_payload['payment_url'], 'persistent' => false)
+        true
+      }).to have_been_made
+    end
+  end
+
+  context 'when sending a payment link without a payment URL' do
+    let(:email_type) { SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK }
+    let(:payment_link_enabled) { true }
+    let(:resource) { create(:order_with_line_items, store: store, email: 'buyer@example.com') }
+    let(:email) { resource.email }
+
+    it 'fails before calling Plunk' do
+      expect(result).to be_failure
+      expect(result.value).to include(error_code: 'missing_payment_url')
+      expect(a_request(:post, 'https://next-api.useplunk.com/v1/send')).not_to have_been_made
     end
   end
 end

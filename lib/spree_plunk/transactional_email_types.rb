@@ -7,6 +7,8 @@ module SpreePlunk
     ORDER_CANCELLATION = 'order_cancellation'.freeze
     SHIPMENT_SHIPPED = 'shipment_shipped'.freeze
     REIMBURSEMENT = 'reimbursement'.freeze
+    STORE_OWNER_NOTIFICATION = 'store_owner_notification'.freeze
+    PAYMENT_LINK = 'payment_link'.freeze
 
     ALL = [
       PASSWORD_RESET,
@@ -15,7 +17,9 @@ module SpreePlunk
       ORDER_CONFIRMATION_RESEND,
       ORDER_CANCELLATION,
       SHIPMENT_SHIPPED,
-      REIMBURSEMENT
+      REIMBURSEMENT,
+      STORE_OWNER_NOTIFICATION,
+      PAYMENT_LINK
     ].freeze
   end
 end

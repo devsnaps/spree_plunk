@@ -30,6 +30,14 @@ module SpreePlunk
       TransactionalEmailTypes::REIMBURSEMENT => {
         enabled_preference: :preferred_reimbursement_email_enabled,
         presenter: SpreePlunk::ReimbursementNotificationEmailPresenter
+      },
+      TransactionalEmailTypes::STORE_OWNER_NOTIFICATION => {
+        enabled_preference: :preferred_store_owner_notification_email_enabled,
+        presenter: SpreePlunk::StoreOwnerNotificationEmailPresenter
+      },
+      TransactionalEmailTypes::PAYMENT_LINK => {
+        enabled_preference: :preferred_payment_link_email_enabled,
+        presenter: SpreePlunk::PaymentLinkEmailPresenter
       }
     }.freeze
 
@@ -55,6 +63,7 @@ module SpreePlunk
 
       result = plunk_integration.send_transactional_email(payload)
       mark_order_confirmation_delivered(resource, email_type) if result.success?
+      mark_store_owner_notification_delivered(resource, email_type) if result.success?
       result
     end
 
@@ -89,6 +98,13 @@ module SpreePlunk
         return noop_result('missing_shipment') unless resource
       when TransactionalEmailTypes::REIMBURSEMENT
         return noop_result('missing_reimbursement') unless resource
+      when TransactionalEmailTypes::STORE_OWNER_NOTIFICATION
+        return noop_result('missing_order') unless resource
+        return noop_result('store_owner_notification_already_delivered') if resource.respond_to?(:store_owner_notification_delivered?) && resource.store_owner_notification_delivered?
+        return noop_result('missing_store_owner_notification_email') if resource.store&.new_order_notifications_email.blank?
+      when TransactionalEmailTypes::PAYMENT_LINK
+        return noop_result('missing_order') unless resource
+        return failure_result('missing_payment_url', 'Payment link emails require a payment URL.') if event_value(event_payload, :payment_url).blank?
       end
 
       nil
@@ -132,6 +148,14 @@ module SpreePlunk
       return if resource.confirmation_delivered?
 
       resource.update_column(:confirmation_delivered, true)
+    end
+
+    def mark_store_owner_notification_delivered(resource, email_type)
+      return unless email_type.to_s == TransactionalEmailTypes::STORE_OWNER_NOTIFICATION
+      return unless resource.respond_to?(:store_owner_notification_delivered?)
+      return if resource.store_owner_notification_delivered?
+
+      resource.update_column(:store_owner_notification_delivered, true)
     end
   end
 end

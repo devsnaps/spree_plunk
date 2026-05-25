@@ -24,7 +24,7 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 | Order cancellation | `order.canceled` | `Spree::OrderMailer.cancel_email` from `spree_emails` | Implemented through `order_cancellation` direct send, default off; still tracks `spree.order.canceled` as a Plunk event | Choose one owner per store; `spree_plunk` can own this after `spree_emails` sending is controlled | Respects `notify_customer: false`. |
 | Shipment shipped notification | `shipment.shipped` | `Spree::ShipmentMailer.shipped_email` from `spree_emails` when consumer transactional emails are enabled | Implemented through `shipment_shipped` direct send, default off; still tracks `spree.shipment.shipped` as a Plunk event | Choose one owner per store; `spree_plunk` can own this after `spree_emails` sending is controlled | Use the Rails event `shipment.shipped`; do not invent a storefront-only shipped event. |
 | Reimbursement notification | `reimbursement.reimbursed` | `Spree::ReimbursementMailer.reimbursement_email` from `spree_emails` when consumer transactional emails are enabled | Implemented through `reimbursement` direct send, default off; still tracks `spree.reimbursement.paid` as a Plunk event | Choose one owner per store; `spree_plunk` can own this after `spree_emails` sending is controlled | Keep refund/reimbursement wording aligned between the Spree fact source, Plunk event, and customer-facing template. |
-| Payment link email | Admin payment link action | `Spree::OrderMailer.payment_link_email` called directly by the admin payment link controller | Not covered | Keep Spree/Rails first | This is not currently a subscriber path. Handoff needs an extension hook or controller decorator, plus a clear fallback if Plunk send fails. |
+| Payment link email | Admin payment link action | `Spree::OrderMailer.payment_link_email` called directly by the admin payment link controller | Implemented through `payment_link` direct send plus a payment-link controller decorator, default off | Choose one owner per store; `spree_plunk` can own this after `spree_emails` sending is controlled | This is not a subscriber path. When enabled, the decorator does not call `Spree::OrderMailer.payment_link_email`; when disabled, it preserves the mailer fallback if that mailer exists. |
 | Customer registration confirmation or welcome | No confirmed direct transactional event in the current local Spree source | Usually Devise/Confirmable or host-app behavior if enabled | Not covered | Defer until the account confirmation/welcome rule is explicit | Registration alone must not imply marketing consent. |
 | Invitation created, accepted, or resent | `invitation.created`, `invitation.accepted`, `invitation.resent` | `Spree::InvitationMailer` from Spree core | Not covered | Keep Spree/Rails first | Not part of `spree_emails`; replacing it needs a core-mailer boundary decision. |
 
@@ -32,7 +32,7 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 
 | Email or flow | Spree fact source | Current Spree sender | Current `spree_plunk` status | Recommended owner now | Guardrails |
 | --- | --- | --- | --- | --- | --- |
-| Store owner new order notification | Side effect of `order.completed` handling in `Spree::OrderEmailSubscriber` | `Spree::OrderMailer.store_owner_notification_email` from `spree_emails` | Not covered | Keep Spree/Rails first | This is an operator notification, not a customer receipt. Do not move together with customer order confirmation unless both owner paths are explicit. |
+| Store owner new order notification | Side effect of `order.completed` handling in `Spree::OrderEmailSubscriber` | `Spree::OrderMailer.store_owner_notification_email` from `spree_emails` | Implemented through `store_owner_notification` direct send, default off | Choose one owner per store; `spree_plunk` can own this after `spree_emails` sending is controlled | This is an operator notification, not a customer receipt. It has a separate owner switch and respects `store_owner_notification_delivered`. |
 | Export completion | Export generation completion | `Spree::ExportMailer.export_done` from Spree core when the export has a user | Not covered | Keep Spree/Rails first | Admin/system mail. Not part of storefront transactional migration. |
 | Report completion | Report generation completion | `Spree::ReportMailer.report_done` from Spree core when the report has a user | Not covered | Keep Spree/Rails first | Admin/system mail. Not part of storefront transactional migration. |
 | Webhook endpoint disabled | Webhook endpoint auto-disable path | `Spree::WebhookMailer.endpoint_disabled` from Spree core | Not covered | Keep Spree/Rails first | Operational mail. Do not route through marketing workflows. |
@@ -55,6 +55,8 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 | Order cancellation | `order.canceled` | `preferred_transactional_email_enabled` and `preferred_order_cancellation_email_enabled` | Implemented; preserves `notify_customer: false`. Enable only when `spree_emails` cancellation sending is controlled. |
 | Shipment shipped notification | `shipment.shipped` | `preferred_transactional_email_enabled` and `preferred_shipment_shipped_email_enabled` | Implemented; enable only when `spree_emails` shipment notification sending is controlled. |
 | Reimbursement notification | `reimbursement.reimbursed` | `preferred_transactional_email_enabled` and `preferred_reimbursement_email_enabled` | Implemented; enable only when `spree_emails` reimbursement notification sending is controlled. |
+| Store owner new-order notification | `order.completed` | `preferred_transactional_email_enabled` and `preferred_store_owner_notification_email_enabled` | Implemented; preserves `store_owner_notification_delivered`. Enable only when `spree_emails` store owner notification sending is controlled. |
+| Payment link email | Admin payment link action | `preferred_transactional_email_enabled` and `preferred_payment_link_email_enabled` | Implemented; payment URL is sent as non-persistent Plunk data. Enable only when `spree_emails` payment link sending is controlled. |
 
 ## Source Files Checked
 
@@ -64,6 +66,7 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 - `spree/emails/app/subscribers/spree/reimbursement_email_subscriber.rb`
 - `spree/api/app/controllers/spree/api/v3/store/customer/password_resets_controller.rb`
 - `spree/admin/app/controllers/spree/admin/orders/payment_links_controller.rb`
+- `app/controllers/spree_plunk/payment_links_controller_decorator.rb`
 - `spree/core/app/subscribers/spree/invitation_email_subscriber.rb`
 - `spree/core/app/models/spree/export.rb`
 - `spree/core/app/models/spree/report.rb`

@@ -94,11 +94,13 @@ The current direct-send handoff supports:
 - order cancellation emails from `order.canceled`
 - shipment notifications from `shipment.shipped`
 - reimbursement notifications from `reimbursement.reimbursed`
+- store owner new-order notifications from `order.completed`
+- Admin payment link emails from the order payment-link action
 
 Current ownership boundary:
 
 - `spree_plunk` owns only the explicitly enabled email types above.
-- Spree/Rails still owns store owner notifications, payment link emails, invitation emails, reports, webhooks, exports, and any other extension-provided mailers that are not listed above.
+- Spree/Rails still owns invitation emails, reports, webhooks, exports, and any other extension-provided mailers that are not listed above.
 - Any email type that is also sent by `spree_emails` can duplicate if both systems are configured to send it. Keep one owner per email type while this handoff is partial.
 - Password reset is a good early Plunk owner because the local Spree source emits `customer.password_reset_requested`, but the standard consumer email subscriber set does not include a bundled password reset subscriber.
 - Order completion handoff preserves `notify_customer: false` and `confirmation_delivered` guards before enqueueing a Plunk send.
@@ -159,6 +161,10 @@ The current admin form exposes these fields.
 | `Shipment Shipped Template ID` | No | A Plunk template ID for shipment notification content | If blank, the extension sends a simple inline HTML body. |
 | `Send Reimbursement Emails` | No | Check this when Plunk should send reimbursement notifications | Requires `Enable Plunk Transactional Email`. |
 | `Reimbursement Template ID` | No | A Plunk template ID for reimbursement notification content | If blank, the extension sends a simple inline HTML body. |
+| `Send Store Owner Notifications` | No | Check this when Plunk should send new-order notifications to the store owner address | Requires `Enable Plunk Transactional Email`. Respects `store_owner_notification_delivered`. |
+| `Store Owner Notification Template ID` | No | A Plunk template ID for store owner new-order notification content | If blank, the extension sends a simple inline HTML body. |
+| `Send Payment Link Emails` | No | Check this when Plunk should send Admin payment link emails | Requires `Enable Plunk Transactional Email`. When enabled, the Admin action does not call `Spree::OrderMailer.payment_link_email`. |
+| `Payment Link Template ID` | No | A Plunk template ID for payment link email content | If blank, the extension sends a simple inline HTML body. |
 | `Enable Subscription Webhook` | No | Check this only if you want Plunk contact subscription changes to write back into Spree | Disabled by default. |
 | `Subscription Webhook Authorization Token` | Required only when webhook is enabled | A shared secret that you generate yourself | Plunk will send this back in the `Authorization` header as `Bearer <token>`. |
 
@@ -198,6 +204,8 @@ The current admin form exposes these fields.
 - Order confirmation and cancellation payloads include order summary data such as order number, totals, item count, completion time, cancellation time, and store URL.
 - Shipment payloads include shipment number, order number, tracking, shipping method, stock location, cost, totals, and shipped time.
 - Reimbursement payloads include reimbursement number, order number, reimbursement status, amounts, and return item count.
+- Store owner notification payloads include order summary data plus the customer email.
+- Payment link payloads include the payment URL as non-persistent Plunk data.
 - Localhost storefront URLs are acceptable in test links, but the sender email domain must be verified in Plunk even for local testing.
 
 ## Recommended Setup Flow
@@ -216,7 +224,7 @@ The current admin form exposes these fields.
 3. Enable `Enable Plunk Transactional Email`.
 4. Enable exactly the email types that Plunk should own.
 5. Add Plunk template IDs if you want Plunk-managed template content; otherwise the extension will send simple inline HTML.
-6. Trigger the selected email type, such as password reset, newsletter subscription request, order completion, order cancellation, shipment shipped, reimbursement, or explicit order confirmation resend.
+6. Trigger the selected email type, such as password reset, newsletter subscription request, order completion, order cancellation, shipment shipped, reimbursement, payment link, or explicit order confirmation resend.
 7. Watch Sidekiq and Plunk delivery logs for send failures such as unverified sender domains.
 
 ## API Strategy
@@ -397,7 +405,7 @@ This extension is a good fit when you want:
 The current MVP intentionally does not cover:
 
 - automatic removal or disabling of `spree_emails`
-- payment link, store owner notification, invitation, report, export, or webhook system emails
+- invitation, report, export, or webhook system emails
 - default-enabling Plunk transactional sends without an explicit operator decision per email type
 - anonymous visitor tracking
 - storefront public-key or browser-side tracking

@@ -57,12 +57,37 @@ module SpreePlunk
 
     def plunk_data(data)
       data.compact_blank.to_h do |key, value|
-        if SENSITIVE_DATA_KEYS.include?(key.to_sym)
+        if non_persistent_data_value?(value)
+          [key, value]
+        elsif SENSITIVE_DATA_KEYS.include?(key.to_sym)
           [key, { value: value, persistent: false }]
         else
           [key, value]
         end
       end
+    end
+
+    def non_persistent_data(value)
+      { value: value, persistent: false }
+    end
+
+    def non_persistent_data_hash(data)
+      data.each_with_object({}) do |(key, value), payload|
+        next if plunk_data_blank?(value)
+
+        payload[key] = non_persistent_data(value)
+      end
+    end
+
+    def non_persistent_data_value?(value)
+      return false unless value.is_a?(Hash)
+
+      (value.key?(:value) || value.key?('value')) &&
+        (value[:persistent] == false || value['persistent'] == false)
+    end
+
+    def plunk_data_blank?(value)
+      value.nil? || (value.respond_to?(:empty?) && value.empty?)
     end
 
     def headers(email_type:, resource_type: nil, resource_id: nil)

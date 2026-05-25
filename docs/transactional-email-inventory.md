@@ -12,6 +12,7 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 - Localhost storefront links can be used during local testing, but the `from` email domain must be verified in the Plunk project.
 - Do not let two systems send the same email type unless duplicate prevention is built and tested.
 - Transactional sends must not subscribe, resubscribe, unsubscribe, or otherwise change marketing consent.
+- Order-backed transactional template data is sent as non-persistent Plunk data and includes both structured values and Plunk-template-friendly HTML/text fragments for line items, totals, addresses, and shipments.
 
 ## Customer-Facing Email Matrix
 
@@ -50,13 +51,13 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 | --- | --- | --- | --- |
 | Password reset | `customer.password_reset_requested` | `preferred_transactional_email_enabled` and `preferred_password_reset_email_enabled` | Implemented and locally verified received with a verified sender domain. |
 | Newsletter double opt-in confirmation | `newsletter_subscriber.subscription_requested` | `preferred_transactional_email_enabled` and `preferred_newsletter_confirmation_email_enabled` | Implemented; enable only when the Spree/Rails sender for the same email is controlled. |
-| Order confirmation | `order.completed` | `preferred_transactional_email_enabled` and `preferred_order_confirmation_email_enabled` | Implemented; preserves `notify_customer: false` and `confirmation_delivered`. Enable only when `spree_emails` customer receipt sending is controlled. |
+| Order confirmation | `order.completed` | `preferred_transactional_email_enabled` and `preferred_order_confirmation_email_enabled` | Implemented; preserves `notify_customer: false` and `confirmation_delivered`; includes non-persistent order line item, totals, address, and shipment template data. Enable only when `spree_emails` customer receipt sending is controlled. |
 | Manual order confirmation resend | `order.resend_confirmation_email` | `preferred_transactional_email_enabled` and `preferred_order_confirmation_resend_email_enabled` | Implemented; verify the admin/order-detail action path and avoid duplicate sends from `spree_emails`. |
-| Order cancellation | `order.canceled` | `preferred_transactional_email_enabled` and `preferred_order_cancellation_email_enabled` | Implemented; preserves `notify_customer: false`. Enable only when `spree_emails` cancellation sending is controlled. |
+| Order cancellation | `order.canceled` | `preferred_transactional_email_enabled` and `preferred_order_cancellation_email_enabled` | Implemented; preserves `notify_customer: false`; includes non-persistent order line item, totals, address, and shipment template data. Enable only when `spree_emails` cancellation sending is controlled. |
 | Shipment shipped notification | `shipment.shipped` | `preferred_transactional_email_enabled` and `preferred_shipment_shipped_email_enabled` | Implemented; enable only when `spree_emails` shipment notification sending is controlled. |
 | Reimbursement notification | `reimbursement.reimbursed` | `preferred_transactional_email_enabled` and `preferred_reimbursement_email_enabled` | Implemented; enable only when `spree_emails` reimbursement notification sending is controlled. |
-| Store owner new-order notification | `order.completed` | `preferred_transactional_email_enabled` and `preferred_store_owner_notification_email_enabled` | Implemented; preserves `store_owner_notification_delivered`. Enable only when `spree_emails` store owner notification sending is controlled. |
-| Payment link email | Admin payment link action | `preferred_transactional_email_enabled` and `preferred_payment_link_email_enabled` | Implemented; payment URL is sent as non-persistent Plunk data. Enable only when `spree_emails` payment link sending is controlled. |
+| Store owner new-order notification | `order.completed` | `preferred_transactional_email_enabled` and `preferred_store_owner_notification_email_enabled` | Implemented; preserves `store_owner_notification_delivered`; includes non-persistent order line item, totals, address, shipment, and customer email template data. Enable only when `spree_emails` store owner notification sending is controlled. |
+| Payment link email | Admin payment link action | `preferred_transactional_email_enabled` and `preferred_payment_link_email_enabled` | Implemented; payment URL and order template data are sent as non-persistent Plunk data. Enable only when `spree_emails` payment link sending is controlled. |
 
 ## Source Files Checked
 

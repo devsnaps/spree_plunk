@@ -19,12 +19,14 @@ RSpec.describe SpreePlunk::StoreOwnerNotificationEmailPresenter do
       expect(payload[:to]).to eq('owner@example.com')
       expect(payload[:template]).to eq('tpl_owner')
       expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION,
-        store_name: 'Example Store',
-        order_number: order.number,
-        recipient_email: 'owner@example.com',
-        customer_email: 'buyer@example.com'
+        email_type: non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION),
+        store_name: non_persistent_plunk_value('Example Store'),
+        order_number: non_persistent_plunk_value(order.number),
+        recipient_email: non_persistent_plunk_value('owner@example.com'),
+        customer_email: non_persistent_plunk_value('buyer@example.com')
       )
+      expect(plunk_data_value(payload[:data], :line_items_html)).to include(order.line_items.first.name)
+      expect(plunk_data_value(payload[:data], :totals_text)).to include('Total:')
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION)
     end
   end

@@ -18,12 +18,14 @@ RSpec.describe SpreePlunk::PaymentLinkEmailPresenter do
       expect(payload[:to]).to eq('buyer@example.com')
       expect(payload[:template]).to eq('tpl_payment')
       expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK,
-        store_name: 'Example Store',
-        order_number: order.number,
-        recipient_email: 'buyer@example.com'
+        email_type: non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK),
+        store_name: non_persistent_plunk_value('Example Store'),
+        order_number: non_persistent_plunk_value(order.number),
+        recipient_email: non_persistent_plunk_value('buyer@example.com')
       )
       expect(payload.dig(:data, :payment_url)).to eq(value: payment_url, persistent: false)
+      expect(plunk_data_value(payload[:data], :line_items_text)).to include(order.line_items.first.name)
+      expect(plunk_data_value(payload[:data], :totals_html)).to include('<table')
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK)
     end
   end

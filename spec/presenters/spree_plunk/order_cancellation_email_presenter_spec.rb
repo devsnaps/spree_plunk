@@ -13,12 +13,14 @@ RSpec.describe SpreePlunk::OrderCancellationEmailPresenter do
       expect(payload[:to]).to eq('buyer@example.com')
       expect(payload[:template]).to eq('tpl_cancel')
       expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::ORDER_CANCELLATION,
-        store_name: 'Example Store',
-        order_number: order.number,
-        canceled_at: '2026-05-25T08:00:00Z',
-        recipient_email: 'buyer@example.com'
+        email_type: non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::ORDER_CANCELLATION),
+        store_name: non_persistent_plunk_value('Example Store'),
+        order_number: non_persistent_plunk_value(order.number),
+        canceled_at: non_persistent_plunk_value('2026-05-25T08:00:00Z'),
+        recipient_email: non_persistent_plunk_value('buyer@example.com')
       )
+      expect(plunk_data_value(payload[:data], :line_items_text)).to include(order.line_items.first.name)
+      expect(plunk_data_value(payload[:data], :totals_html)).to include('<table')
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::ORDER_CANCELLATION)
     end
   end

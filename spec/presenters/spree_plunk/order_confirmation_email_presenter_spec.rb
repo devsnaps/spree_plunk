@@ -13,12 +13,16 @@ RSpec.describe SpreePlunk::OrderConfirmationEmailPresenter do
       expect(payload[:to]).to eq('buyer@example.com')
       expect(payload[:template]).to eq('tpl_order')
       expect(payload[:data]).to include(
-        email_type: SpreePlunk::TransactionalEmailTypes::ORDER_CONFIRMATION,
-        store_name: 'Example Store',
-        store_code: 'example-store',
-        order_number: order.number,
-        recipient_email: 'buyer@example.com'
+        email_type: non_persistent_plunk_value(SpreePlunk::TransactionalEmailTypes::ORDER_CONFIRMATION),
+        store_name: non_persistent_plunk_value('Example Store'),
+        store_code: non_persistent_plunk_value('example-store'),
+        order_number: non_persistent_plunk_value(order.number),
+        recipient_email: non_persistent_plunk_value('buyer@example.com')
       )
+      expect(plunk_data_value(payload[:data], :line_items)).to contain_exactly(hash_including(product_name: order.line_items.first.name))
+      expect(plunk_data_value(payload[:data], :line_items_html)).to include('<table')
+      expect(plunk_data_value(payload[:data], :totals_text)).to include('Total:')
+      expect(plunk_data_value(payload[:data], :shipping_address_text)).to include('New York')
       expect(payload.dig(:headers, 'X-Spree-Plunk-Email-Type')).to eq(SpreePlunk::TransactionalEmailTypes::ORDER_CONFIRMATION)
     end
   end

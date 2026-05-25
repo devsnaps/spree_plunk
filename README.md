@@ -201,10 +201,9 @@ The current admin form exposes these fields.
 - Template IDs are optional. When a template ID is present, Plunk renders the template with the provided `data` payload. When it is blank, the extension sends a simple inline HTML body.
 - Password reset payloads include `reset_token` and `reset_url` as non-persistent Plunk data.
 - Newsletter confirmation payloads include `verification_token`, `verification_url`, and `confirmation_url` as non-persistent Plunk data.
-- Order confirmation and cancellation payloads include order summary data such as order number, totals, item count, completion time, cancellation time, and store URL.
+- Order confirmation, cancellation, store owner notification, and payment link payloads include non-persistent order template data such as order number, customer identity, line item fragments, totals, addresses, shipment summaries, completion time, cancellation time, and store URL.
 - Shipment payloads include shipment number, order number, tracking, shipping method, stock location, cost, totals, and shipped time.
 - Reimbursement payloads include reimbursement number, order number, reimbursement status, amounts, and return item count.
-- Store owner notification payloads include order summary data plus the customer email.
 - Payment link payloads include the payment URL as non-persistent Plunk data.
 - Localhost storefront URLs are acceptable in test links, but the sender email domain must be verified in Plunk even for local testing.
 
@@ -226,6 +225,24 @@ The current admin form exposes these fields.
 5. Add Plunk template IDs if you want Plunk-managed template content; otherwise the extension will send simple inline HTML.
 6. Trigger the selected email type, such as password reset, newsletter subscription request, order completion, order cancellation, shipment shipped, reimbursement, payment link, or explicit order confirmation resend.
 7. Watch Sidekiq and Plunk delivery logs for send failures such as unverified sender domains.
+
+### Plunk Template Variables For Order Emails
+
+Order-backed transactional emails expose top-level Plunk variables. Use `{{order_number}}`, not `{{data.order_number}}`, in hosted Plunk templates.
+
+Useful variables include:
+
+- `{{store_name}}`, `{{store_code}}`, `{{store_url}}`
+- `{{recipient_email}}`, `{{customer_email}}`, `{{customer_name}}`, `{{customer_first_name}}`, `{{customer_last_name}}`
+- `{{order_number}}`, `{{order_state}}`, `{{payment_state}}`, `{{shipment_state}}`, `{{completed_at}}`, `{{canceled_at}}`
+- `{{order_total}}`, `{{item_total_display}}`, `{{shipment_total_display}}`, `{{tax_total_display}}`, `{{discount_total_display}}`
+- `{{line_items_html}}` or `{{line_items_text}}`
+- `{{totals_html}}` or `{{totals_text}}`
+- `{{shipping_address_text}}`, `{{billing_address_text}}`
+- `{{shipments_html}}` or `{{shipments_text}}`
+- `{{payment_url}}` for payment link emails
+
+The HTML fragments are pre-rendered by `spree_plunk` because Plunk's current template replacement is variable-based and is not a full loop/template language. The same payload also includes structured `line_items`, `totals`, `shipments`, `shipping_address`, and `billing_address` values for future workflow/API use. Order-backed transactional data is sent as non-persistent Plunk data so receipts do not overwrite long-lived contact profile fields.
 
 ## API Strategy
 

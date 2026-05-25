@@ -6,9 +6,7 @@ module SpreePlunk
         subject: "New order for #{store_name}",
         body: body,
         template_id: plunk_integration.preferred_store_owner_notification_template_id,
-        data: order_data(email_type: TransactionalEmailTypes::STORE_OWNER_NOTIFICATION).merge(
-          customer_email: customer_email
-        ),
+        data: order_data(email_type: TransactionalEmailTypes::STORE_OWNER_NOTIFICATION),
         headers: headers(
           email_type: TransactionalEmailTypes::STORE_OWNER_NOTIFICATION,
           resource_type: ::Spree::Order.name,

@@ -90,7 +90,6 @@ RSpec.describe SpreePlunk::TransactionalEmailSubscriber do
         email: 'newsletter@example.com',
         verification_token: 'verify-token',
         verified?: false,
-        store: nil,
         to_param: 'sub_123'
       )
       allow(subscriber).to receive(:find_newsletter_subscriber).and_return(newsletter_subscriber)

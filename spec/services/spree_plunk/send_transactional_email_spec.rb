@@ -135,8 +135,10 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
       expect(a_request(:post, 'https://next-api.useplunk.com/v1/send').with { |request|
         body = JSON.parse(request.body)
 
-        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::ORDER_CONFIRMATION)
-        expect(body.dig('data', 'order_number')).to eq(resource.number)
+        expect(plunk_data_value(body['data'], 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::ORDER_CONFIRMATION)
+        expect(plunk_data_value(body['data'], 'order_number')).to eq(resource.number)
+        expect(plunk_data_value(body['data'], 'line_items_html')).to include('<table')
+        expect(plunk_data_value(body['data'], 'totals_text')).to include('Total:')
         true
       }).to have_been_made
     end
@@ -242,8 +244,8 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
         body = JSON.parse(request.body)
 
         expect(body['to']).to eq('owner@example.com')
-        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION)
-        expect(body.dig('data', 'customer_email')).to eq('buyer@example.com')
+        expect(plunk_data_value(body['data'], 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION)
+        expect(plunk_data_value(body['data'], 'customer_email')).to eq('buyer@example.com')
         true
       }).to have_been_made
     end
@@ -278,7 +280,7 @@ RSpec.describe SpreePlunk::SendTransactionalEmail do
         body = JSON.parse(request.body)
 
         expect(body['to']).to eq('buyer@example.com')
-        expect(body.dig('data', 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK)
+        expect(plunk_data_value(body['data'], 'email_type')).to eq(SpreePlunk::TransactionalEmailTypes::PAYMENT_LINK)
         expect(body.dig('data', 'payment_url')).to eq('value' => event_payload['payment_url'], 'persistent' => false)
         true
       }).to have_been_made

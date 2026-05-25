@@ -1,8 +1,8 @@
 # Spree Plunk
 
-`spree_plunk` is a Spree Commerce extension that connects a Spree store to Plunk for server-side contact sync and consent-safe event tracking.
+`spree_plunk` is a Spree Commerce extension that connects a Spree store to Plunk for server-side contact sync, consent-safe event tracking, and selected transactional email handoff.
 
-It is built for marketing use cases such as workflows, campaigns, and audience segmentation. Transactional emails such as order confirmations, shipment updates, refunds, and password resets still stay with Spree/Rails by default.
+It is built for marketing use cases such as workflows, campaigns, and audience segmentation. Transactional emails still stay with Spree/Rails by default unless an operator explicitly enables the Plunk transactional email master switch and one of the supported email-type switches.
 
 ## What This Extension Does
 
@@ -12,6 +12,7 @@ It is built for marketing use cases such as workflows, campaigns, and audience s
 - keeps marketing consent explicit instead of inferring it from behavioral events
 - supports both hosted Plunk and self-hosted Plunk through a configurable base API URL
 - can optionally accept contact subscription-state callbacks from Plunk and write them back into Spree
+- can optionally send the first supported transactional email types through Plunk's HTTP send API
 
 ## Current Features
 
@@ -80,12 +81,32 @@ Current storefront event-source boundary:
 - the storefront analytics handler is currently unused for the supported event set, which avoids duplicate tracking if Spree later emits overlapping analytics events
 - browse-only analytics such as product view, product list view, and product search remain deferred
 
+### Transactional Email Handoff
+
+Transactional email delivery through Plunk is default-off and uses Plunk's HTTP `POST /v1/send` API. It does not use SMTP, so local development can send through hosted Plunk as long as the app can reach Plunk and the sender domain is verified in the Plunk project.
+
+The first handoff tranche supports:
+
+- Store API password reset emails from `customer.password_reset_requested`
+- newsletter double opt-in emails from `newsletter_subscriber.subscription_requested`
+- explicit admin/order-detail order confirmation resends from `order.resend_confirmation_email`
+
+Current ownership boundary:
+
+- `spree_plunk` owns only the three enabled email types above.
+- Spree/Rails still owns normal order completion confirmations, order cancellation emails, shipment emails, reimbursement/refund emails, payment link emails, invitation emails, reports, and any other extension-provided mailers.
+- Newsletter confirmation and explicit order confirmation resend can duplicate with `spree_emails` if both systems are configured to send the same email type. Keep one owner per email type while this handoff is partial.
+- Password reset is a good early Plunk owner because the local Spree source emits `customer.password_reset_requested`, but the standard consumer email subscriber set does not include a bundled password reset subscriber.
+- Reset and verification tokens are sent to Plunk as non-persistent template data.
+- Storefront URLs may be local during testing, but the sender email domain must still be verified in Plunk.
+
 ### Admin And Operations
 
 - Spree admin integration form for Plunk credentials and base URL
 - connectivity check against the Plunk API
-- optional default sender fields for future use
+- optional default sender fields for direct transactional sends
 - optional public API key storage, intentionally unused by the current server-side MVP
+- default-off direct transactional send settings for the first handoff tranche
 - optional inbound subscription-state webhook guarded by a bearer token
 - duplicate-delivery protection for webhook intake
 - retry/discard classification for async sync failures
@@ -115,8 +136,15 @@ The current admin form exposes these fields.
 | `Plunk Base URL` | Yes | The Plunk API base URL, such as `https://next-api.useplunk.com` or your self-hosted API base like `https://plunk.example.com/api` | Use the API base only. Do not paste `/contacts`, `/events/track`, or `/v1/track`. |
 | `Secret API Key` | Yes | A Plunk secret server key for the workspace, typically `sk_*` | This is the only key the current server-side integration needs for contact upsert, unsubscribe, and event tracking. |
 | `Public API Key` | No | An optional browser/public key, typically `pk_*` | Stored only for future use. The current server-side MVP does not use it. |
-| `Default Sender Email` | No | A mailbox such as `marketing@example.com` | Stored for future sender-related features. It does not change current sync or event tracking behavior on its own. |
-| `Default Sender Name` | No | A display name such as `Example Store` | If you set this, also set `Default Sender Email` so the stored sender identity is complete. |
+| `Default Sender Email` | No | A mailbox on a Plunk-verified sending domain, such as `hello@shop.example.com` | Used by direct transactional sends. If blank, the extension falls back to the store `mail_from_address`. |
+| `Default Sender Name` | No | A display name such as `Example Store` | Used with `Default Sender Email`. If you set this, also set `Default Sender Email` so the stored sender identity is complete. |
+| `Enable Plunk Transactional Email` | No | Check this only after the sender domain is verified in Plunk | Master switch for direct `POST /v1/send` delivery. Disabled by default. |
+| `Send Password Reset Emails` | No | Check this when Plunk should send Store API password reset emails | Requires `Enable Plunk Transactional Email`. |
+| `Password Reset Template ID` | No | A Plunk template ID for password reset email content | If blank, the extension sends a simple inline HTML body. |
+| `Send Newsletter Confirmation Emails` | No | Check this when Plunk should send newsletter double opt-in emails | Requires `Enable Plunk Transactional Email`. Avoid enabling a second Spree/Rails owner for the same email. |
+| `Newsletter Confirmation Template ID` | No | A Plunk template ID for newsletter confirmation content | If blank, the extension sends a simple inline HTML body. |
+| `Send Order Confirmation Resends` | No | Check this when Plunk should send explicit order confirmation resend requests | Requires `Enable Plunk Transactional Email`. This does not replace normal order-completed confirmation emails. |
+| `Order Confirmation Template ID` | No | A Plunk template ID for order confirmation resend content | If blank, the extension sends a simple inline HTML body. |
 | `Enable Subscription Webhook` | No | Check this only if you want Plunk contact subscription changes to write back into Spree | Disabled by default. |
 | `Subscription Webhook Authorization Token` | Required only when webhook is enabled | A shared secret that you generate yourself | Plunk will send this back in the `Authorization` header as `Bearer <token>`. |
 
@@ -141,9 +169,20 @@ The current admin form exposes these fields.
 
 #### Default Sender Email and Name
 
-- These fields are placeholders for future sender-aware behavior.
-- They are safe to leave blank in the current MVP.
-- They do not affect current contact sync, newsletter sync, or event tracking.
+- Direct transactional sends use `Default Sender Email` first and fall back to the store `mail_from_address`.
+- Hosted Plunk validates the domain of the `from` email address. Verifying `shop.example.com` allows addresses such as `hello@shop.example.com`, but not `hello@example.com`.
+- These fields do not affect contact sync, newsletter sync, or event tracking.
+- They are safe to leave blank if transactional email handoff is disabled.
+
+#### Transactional Email Settings
+
+- `Enable Plunk Transactional Email` is the master switch.
+- Each supported email type has its own opt-in switch.
+- Template IDs are optional. When a template ID is present, Plunk renders the template with the provided `data` payload. When it is blank, the extension sends a simple inline HTML body.
+- Password reset payloads include `reset_token` and `reset_url` as non-persistent Plunk data.
+- Newsletter confirmation payloads include `verification_token`, `verification_url`, and `confirmation_url` as non-persistent Plunk data.
+- Order confirmation resend payloads include order summary data such as order number, totals, item count, completion time, and store URL.
+- Localhost storefront URLs are acceptable in test links, but the sender email domain must be verified in Plunk even for local testing.
 
 ## Recommended Setup Flow
 
@@ -154,6 +193,16 @@ The current admin form exposes these fields.
 5. Complete a test order and confirm that Plunk receives `spree.order.completed`.
 6. Enable the inbound subscription webhook only after the outbound contact sync path is already behaving correctly.
 
+### Transactional Email Setup Flow
+
+1. In Plunk, verify the sender domain you plan to use.
+2. In Spree Admin, set `Default Sender Email` to a mailbox on that verified domain, or make sure the store `mail_from_address` already uses one.
+3. Enable `Enable Plunk Transactional Email`.
+4. Enable exactly the email types that Plunk should own.
+5. Add Plunk template IDs if you want Plunk-managed template content; otherwise the extension will send simple inline HTML.
+6. Trigger a password reset, newsletter subscription request, or explicit order confirmation resend.
+7. Watch Sidekiq and Plunk delivery logs for send failures such as unverified sender domains.
+
 ## API Strategy
 
 The current server-side integration intentionally uses:
@@ -162,6 +211,7 @@ The current server-side integration intentionally uses:
 - `POST /contacts` with explicit `subscribed: true` for subscribe flows
 - `POST /contacts` with explicit `subscribed: false` for unsubscribe flows
 - `POST /events/track` for event delivery after the contact has been ensured
+- `POST /v1/send` for explicitly enabled direct transactional email handoff
 
 This extension does not rely on `/v1/track` for server-side commerce sync. The reason is important: Plunk documents that `/v1/track` can auto-create a contact, and contacts created that way are subscribed by default. The extension avoids that path so consent stays explicit.
 
@@ -330,7 +380,8 @@ This extension is a good fit when you want:
 
 The current MVP intentionally does not cover:
 
-- transactional email migration into Plunk
+- full transactional email migration into Plunk
+- automatic replacement of normal order completion, cancellation, shipment, reimbursement, payment link, invitation, or report emails
 - anonymous visitor tracking
 - storefront public-key or browser-side tracking
 - back-in-stock workflow parity

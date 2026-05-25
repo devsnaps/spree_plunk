@@ -2,12 +2,20 @@ module SpreePlunk
   class TransactionalEmailSubscriber < Spree::Subscriber
     subscribes_to 'customer.password_reset_requested',
                   'newsletter_subscriber.subscription_requested',
+                  'order.completed',
+                  'order.canceled',
                   'order.resend_confirmation_email',
+                  'shipment.shipped',
+                  'reimbursement.reimbursed',
                   async: false
 
     on 'customer.password_reset_requested', :handle_password_reset_requested
     on 'newsletter_subscriber.subscription_requested', :handle_newsletter_subscription_requested
+    on 'order.completed', :handle_order_completed
+    on 'order.canceled', :handle_order_canceled
     on 'order.resend_confirmation_email', :handle_order_confirmation_resend
+    on 'shipment.shipped', :handle_shipment_shipped
+    on 'reimbursement.reimbursed', :handle_reimbursement_reimbursed
 
     private
 
@@ -46,6 +54,43 @@ module SpreePlunk
       )
     end
 
+    def handle_order_completed(event)
+      order = find_order(event.payload['id'])
+      return unless order
+      return if order.respond_to?(:confirmation_delivered?) && order.confirmation_delivered?
+      return if event_value(event.payload, :notify_customer) == false
+
+      integration = plunk_integration(event, store: order.store)
+      return unless enabled_for?(integration, TransactionalEmailTypes::ORDER_CONFIRMATION)
+
+      SpreePlunk::SendTransactionalEmailJob.perform_later(
+        integration.id,
+        TransactionalEmailTypes::ORDER_CONFIRMATION,
+        ::Spree::Order.name,
+        order.id,
+        order.email,
+        event.payload
+      )
+    end
+
+    def handle_order_canceled(event)
+      order = find_order(event.payload['id'])
+      return unless order
+      return if event_value(event.payload, :notify_customer) == false
+
+      integration = plunk_integration(event, store: order.store)
+      return unless enabled_for?(integration, TransactionalEmailTypes::ORDER_CANCELLATION)
+
+      SpreePlunk::SendTransactionalEmailJob.perform_later(
+        integration.id,
+        TransactionalEmailTypes::ORDER_CANCELLATION,
+        ::Spree::Order.name,
+        order.id,
+        order.email,
+        event.payload
+      )
+    end
+
     def handle_order_confirmation_resend(event)
       order = find_order(event.payload['id'])
       return unless order
@@ -58,6 +103,42 @@ module SpreePlunk
         TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND,
         ::Spree::Order.name,
         order.id,
+        order.email,
+        event.payload
+      )
+    end
+
+    def handle_shipment_shipped(event)
+      shipment = find_shipment(event.payload['id'])
+      order = shipment&.order
+      return unless shipment && order
+
+      integration = plunk_integration(event, store: order.store)
+      return unless enabled_for?(integration, TransactionalEmailTypes::SHIPMENT_SHIPPED)
+
+      SpreePlunk::SendTransactionalEmailJob.perform_later(
+        integration.id,
+        TransactionalEmailTypes::SHIPMENT_SHIPPED,
+        ::Spree::Shipment.name,
+        shipment.id,
+        order.email,
+        event.payload
+      )
+    end
+
+    def handle_reimbursement_reimbursed(event)
+      reimbursement = find_reimbursement(event.payload['id'])
+      order = reimbursement&.order
+      return unless reimbursement && order
+
+      integration = plunk_integration(event, store: order.store)
+      return unless enabled_for?(integration, TransactionalEmailTypes::REIMBURSEMENT)
+
+      SpreePlunk::SendTransactionalEmailJob.perform_later(
+        integration.id,
+        TransactionalEmailTypes::REIMBURSEMENT,
+        ::Spree::Reimbursement.name,
+        reimbursement.id,
         order.email,
         event.payload
       )
@@ -84,6 +165,30 @@ module SpreePlunk
         ::Spree::Order.find_by_prefix_id(value)
       else
         ::Spree::Order.find_by(id: value)
+      end
+    end
+
+    def find_shipment(value)
+      return if value.blank?
+
+      if ::Spree::Shipment.respond_to?(:find_by_param)
+        ::Spree::Shipment.find_by_param(value)
+      elsif ::Spree::Shipment.respond_to?(:find_by_prefix_id)
+        ::Spree::Shipment.find_by_prefix_id(value)
+      else
+        ::Spree::Shipment.find_by(id: value)
+      end
+    end
+
+    def find_reimbursement(value)
+      return if value.blank?
+
+      if ::Spree::Reimbursement.respond_to?(:find_by_param)
+        ::Spree::Reimbursement.find_by_param(value)
+      elsif ::Spree::Reimbursement.respond_to?(:find_by_prefix_id)
+        ::Spree::Reimbursement.find_by_prefix_id(value)
+      else
+        ::Spree::Reimbursement.find_by(id: value)
       end
     end
 
@@ -132,11 +237,26 @@ module SpreePlunk
         integration.preferred_password_reset_email_enabled
       when TransactionalEmailTypes::NEWSLETTER_CONFIRMATION
         integration.preferred_newsletter_confirmation_email_enabled
+      when TransactionalEmailTypes::ORDER_CONFIRMATION
+        integration.preferred_order_confirmation_email_enabled
       when TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND
         integration.preferred_order_confirmation_resend_email_enabled
+      when TransactionalEmailTypes::ORDER_CANCELLATION
+        integration.preferred_order_cancellation_email_enabled
+      when TransactionalEmailTypes::SHIPMENT_SHIPPED
+        integration.preferred_shipment_shipped_email_enabled
+      when TransactionalEmailTypes::REIMBURSEMENT
+        integration.preferred_reimbursement_email_enabled
       else
         false
       end
+    end
+
+    def event_value(payload, key)
+      return payload[key.to_s] if payload.key?(key.to_s)
+      return payload[key.to_sym] if payload.key?(key.to_sym)
+
+      nil
     end
   end
 end

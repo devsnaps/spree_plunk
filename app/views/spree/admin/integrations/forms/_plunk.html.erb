@@ -128,6 +128,12 @@
     <%= preference_field(
       @integration,
       form,
+      "order_confirmation_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
       "order_confirmation_resend_email_enabled",
       i18n_scope: "admin.integrations.plunk",
     ) %>
@@ -137,9 +143,60 @@
       "order_confirmation_template_id",
       i18n_scope: "admin.integrations.plunk",
     ) %>
+    <p class="mb-4 mt-n2">
+      Sends checkout-completion receipts from <code>order.completed</code> and explicit resends from
+      <code>order.resend_confirmation_email</code>. The automatic send respects
+      <code>notify_customer: false</code> and <code>confirmation_delivered</code>.
+    </p>
+
+    <%= preference_field(
+      @integration,
+      form,
+      "order_cancellation_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
+      "order_cancellation_template_id",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <p class="mb-4 mt-n2">
+      Sends order cancellation emails from <code>order.canceled</code> and respects
+      <code>notify_customer: false</code>.
+    </p>
+
+    <%= preference_field(
+      @integration,
+      form,
+      "shipment_shipped_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
+      "shipment_shipped_template_id",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <p class="mb-4 mt-n2">
+      Sends shipment notifications from <code>shipment.shipped</code> using Spree shipment and tracking data.
+    </p>
+
+    <%= preference_field(
+      @integration,
+      form,
+      "reimbursement_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
+      "reimbursement_template_id",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
     <p class="mb-0 mt-n2">
-      Sends explicit order confirmation resends from <code>order.resend_confirmation_email</code>. Checkout-completion order
-      receipts remain with Spree mailers until they get their own tested handoff.
+      Sends reimbursement notifications from <code>reimbursement.reimbursed</code>. Keep refund and reimbursement wording
+      aligned with the template shown to customers.
     </p>
   </div>
 </div>

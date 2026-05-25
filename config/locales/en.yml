@@ -12,8 +12,15 @@ en:
         preferred_password_reset_template_id: Password Reset Template ID
         preferred_newsletter_confirmation_email_enabled: Send Newsletter Confirmation Emails
         preferred_newsletter_confirmation_template_id: Newsletter Confirmation Template ID
+        preferred_order_confirmation_email_enabled: Send Order Confirmation Emails
         preferred_order_confirmation_resend_email_enabled: Send Order Confirmation Resends
         preferred_order_confirmation_template_id: Order Confirmation Template ID
+        preferred_order_cancellation_email_enabled: Send Order Cancellation Emails
+        preferred_order_cancellation_template_id: Order Cancellation Template ID
+        preferred_shipment_shipped_email_enabled: Send Shipment Shipped Emails
+        preferred_shipment_shipped_template_id: Shipment Shipped Template ID
+        preferred_reimbursement_email_enabled: Send Reimbursement Emails
+        preferred_reimbursement_template_id: Reimbursement Template ID
         preferred_unsubscribe_webhook_enabled: Enable Subscription Webhook
         preferred_unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token
     errors:
@@ -50,7 +57,14 @@ en:
           password_reset_template_id: Password Reset Template ID
           newsletter_confirmation_email_enabled: Send Newsletter Confirmation Emails
           newsletter_confirmation_template_id: Newsletter Confirmation Template ID
+          order_confirmation_email_enabled: Send Order Confirmation Emails
           order_confirmation_resend_email_enabled: Send Order Confirmation Resends
           order_confirmation_template_id: Order Confirmation Template ID
+          order_cancellation_email_enabled: Send Order Cancellation Emails
+          order_cancellation_template_id: Order Cancellation Template ID
+          shipment_shipped_email_enabled: Send Shipment Shipped Emails
+          shipment_shipped_template_id: Shipment Shipped Template ID
+          reimbursement_email_enabled: Send Reimbursement Emails
+          reimbursement_template_id: Reimbursement Template ID
           unsubscribe_webhook_enabled: Enable Subscription Webhook
           unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token

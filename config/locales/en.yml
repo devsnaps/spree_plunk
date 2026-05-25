@@ -21,6 +21,10 @@ en:
         preferred_shipment_shipped_template_id: Shipment Shipped Template ID
         preferred_reimbursement_email_enabled: Send Reimbursement Emails
         preferred_reimbursement_template_id: Reimbursement Template ID
+        preferred_store_owner_notification_email_enabled: Send Store Owner Notifications
+        preferred_store_owner_notification_template_id: Store Owner Notification Template ID
+        preferred_payment_link_email_enabled: Send Payment Link Emails
+        preferred_payment_link_template_id: Payment Link Template ID
         preferred_unsubscribe_webhook_enabled: Enable Subscription Webhook
         preferred_unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token
     errors:
@@ -66,5 +70,9 @@ en:
           shipment_shipped_template_id: Shipment Shipped Template ID
           reimbursement_email_enabled: Send Reimbursement Emails
           reimbursement_template_id: Reimbursement Template ID
+          store_owner_notification_email_enabled: Send Store Owner Notifications
+          store_owner_notification_template_id: Store Owner Notification Template ID
+          payment_link_email_enabled: Send Payment Link Emails
+          payment_link_template_id: Payment Link Template ID
           unsubscribe_webhook_enabled: Enable Subscription Webhook
           unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token

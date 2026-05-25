@@ -198,6 +198,42 @@
       Sends reimbursement notifications from <code>reimbursement.reimbursed</code>. Keep refund and reimbursement wording
       aligned with the template shown to customers.
     </p>
+
+    <hr class="my-4">
+
+    <%= preference_field(
+      @integration,
+      form,
+      "store_owner_notification_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
+      "store_owner_notification_template_id",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <p class="mb-4 mt-n2">
+      Sends store owner new-order notifications from <code>order.completed</code>. This is an operator notification and
+      is tracked separately from the customer order confirmation.
+    </p>
+
+    <%= preference_field(
+      @integration,
+      form,
+      "payment_link_email_enabled",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <%= preference_field(
+      @integration,
+      form,
+      "payment_link_template_id",
+      i18n_scope: "admin.integrations.plunk",
+    ) %>
+    <p class="mb-0 mt-n2">
+      Sends Admin payment link emails from the order payment-link action. When enabled, <code>spree_plunk</code> owns the
+      action and does not call <code>Spree::OrderMailer.payment_link_email</code>.
+    </p>
   </div>
 </div>
 

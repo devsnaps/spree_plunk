@@ -24,8 +24,15 @@ module Spree
       preference :password_reset_template_id, :string
       preference :newsletter_confirmation_email_enabled, :boolean, default: false
       preference :newsletter_confirmation_template_id, :string
+      preference :order_confirmation_email_enabled, :boolean, default: false
       preference :order_confirmation_resend_email_enabled, :boolean, default: false
       preference :order_confirmation_template_id, :string
+      preference :order_cancellation_email_enabled, :boolean, default: false
+      preference :order_cancellation_template_id, :string
+      preference :shipment_shipped_email_enabled, :boolean, default: false
+      preference :shipment_shipped_template_id, :string
+      preference :reimbursement_email_enabled, :boolean, default: false
+      preference :reimbursement_template_id, :string
       preference :unsubscribe_webhook_enabled, :boolean, default: false
       preference :unsubscribe_webhook_authorization_token, :password
 
@@ -42,6 +49,9 @@ module Spree
       validates :preferred_password_reset_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
       validates :preferred_newsletter_confirmation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
       validates :preferred_order_confirmation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_order_cancellation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_shipment_shipped_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_reimbursement_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
 
       validate :validate_plunk_base_url
       validate :validate_api_keys
@@ -111,6 +121,9 @@ module Spree
         self.preferred_password_reset_template_id = normalize_string(preferred_password_reset_template_id)
         self.preferred_newsletter_confirmation_template_id = normalize_string(preferred_newsletter_confirmation_template_id)
         self.preferred_order_confirmation_template_id = normalize_string(preferred_order_confirmation_template_id)
+        self.preferred_order_cancellation_template_id = normalize_string(preferred_order_cancellation_template_id)
+        self.preferred_shipment_shipped_template_id = normalize_string(preferred_shipment_shipped_template_id)
+        self.preferred_reimbursement_template_id = normalize_string(preferred_reimbursement_template_id)
       end
 
       def normalize_string(value)

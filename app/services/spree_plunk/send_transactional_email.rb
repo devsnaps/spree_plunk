@@ -11,9 +11,25 @@ module SpreePlunk
         enabled_preference: :preferred_newsletter_confirmation_email_enabled,
         presenter: SpreePlunk::NewsletterConfirmationEmailPresenter
       },
+      TransactionalEmailTypes::ORDER_CONFIRMATION => {
+        enabled_preference: :preferred_order_confirmation_email_enabled,
+        presenter: SpreePlunk::OrderConfirmationEmailPresenter
+      },
       TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND => {
         enabled_preference: :preferred_order_confirmation_resend_email_enabled,
         presenter: SpreePlunk::OrderConfirmationResendEmailPresenter
+      },
+      TransactionalEmailTypes::ORDER_CANCELLATION => {
+        enabled_preference: :preferred_order_cancellation_email_enabled,
+        presenter: SpreePlunk::OrderCancellationEmailPresenter
+      },
+      TransactionalEmailTypes::SHIPMENT_SHIPPED => {
+        enabled_preference: :preferred_shipment_shipped_email_enabled,
+        presenter: SpreePlunk::ShipmentShippedEmailPresenter
+      },
+      TransactionalEmailTypes::REIMBURSEMENT => {
+        enabled_preference: :preferred_reimbursement_email_enabled,
+        presenter: SpreePlunk::ReimbursementNotificationEmailPresenter
       }
     }.freeze
 
@@ -60,15 +76,29 @@ module SpreePlunk
 
         token = event_value(event_payload, :verification_token).presence || resource&.verification_token
         return failure_result('missing_verification_token', 'Newsletter confirmation emails require a verification token.') if token.blank?
+      when TransactionalEmailTypes::ORDER_CONFIRMATION
+        return noop_result('missing_order') unless resource
+        return noop_result('order_confirmation_already_delivered') if resource.respond_to?(:confirmation_delivered?) && resource.confirmation_delivered?
+        return noop_result('notify_customer_disabled') if event_value(event_payload, :notify_customer) == false
       when TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND
         return noop_result('missing_order') unless resource
+      when TransactionalEmailTypes::ORDER_CANCELLATION
+        return noop_result('missing_order') unless resource
+        return noop_result('notify_customer_disabled') if event_value(event_payload, :notify_customer) == false
+      when TransactionalEmailTypes::SHIPMENT_SHIPPED
+        return noop_result('missing_shipment') unless resource
+      when TransactionalEmailTypes::REIMBURSEMENT
+        return noop_result('missing_reimbursement') unless resource
       end
 
       nil
     end
 
     def event_value(event_payload, key)
-      event_payload[key.to_s] || event_payload[key.to_sym]
+      return event_payload[key.to_s] if event_payload.key?(key.to_s)
+      return event_payload[key.to_sym] if event_payload.key?(key.to_sym)
+
+      nil
     end
 
     def validate_payload(payload)
@@ -94,7 +124,10 @@ module SpreePlunk
     end
 
     def mark_order_confirmation_delivered(resource, email_type)
-      return unless email_type.to_s == TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND
+      return unless [
+        TransactionalEmailTypes::ORDER_CONFIRMATION,
+        TransactionalEmailTypes::ORDER_CONFIRMATION_RESEND
+      ].include?(email_type.to_s)
       return unless resource.respond_to?(:confirmation_delivered?)
       return if resource.confirmation_delivered?
 

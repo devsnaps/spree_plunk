@@ -73,7 +73,10 @@ module SpreePlunk
     end
 
     def event_value(key)
-      event_payload[key.to_s] || event_payload[key.to_sym]
+      return event_payload[key.to_s] if event_payload.key?(key.to_s)
+      return event_payload[key.to_sym] if event_payload.key?(key.to_sym)
+
+      nil
     end
 
     def append_token(url, token)

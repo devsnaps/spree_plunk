@@ -22,7 +22,10 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         preferred_default_from_name: ' Example Store ',
         preferred_password_reset_template_id: ' tpl_password ',
         preferred_newsletter_confirmation_template_id: ' tpl_newsletter ',
-        preferred_order_confirmation_template_id: ' tpl_order '
+        preferred_order_confirmation_template_id: ' tpl_order ',
+        preferred_order_cancellation_template_id: ' tpl_cancel ',
+        preferred_shipment_shipped_template_id: ' tpl_shipment ',
+        preferred_reimbursement_template_id: ' tpl_reimbursement '
       )
 
       integration.valid?
@@ -37,6 +40,9 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         expect(integration.preferred_password_reset_template_id).to eq('tpl_password')
         expect(integration.preferred_newsletter_confirmation_template_id).to eq('tpl_newsletter')
         expect(integration.preferred_order_confirmation_template_id).to eq('tpl_order')
+        expect(integration.preferred_order_cancellation_template_id).to eq('tpl_cancel')
+        expect(integration.preferred_shipment_shipped_template_id).to eq('tpl_shipment')
+        expect(integration.preferred_reimbursement_template_id).to eq('tpl_reimbursement')
       end
     end
 

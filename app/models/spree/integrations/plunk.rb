@@ -12,12 +12,20 @@ module Spree
       MAX_API_KEY_LENGTH = 255
       MAX_SENDER_EMAIL_LENGTH = 255
       MAX_SENDER_NAME_LENGTH = 255
+      MAX_TEMPLATE_ID_LENGTH = 255
       PLUNK_LOGO_PATH = SpreePlunk::Engine.root.join('app/assets/images/integration_icons/plunk-logo.png')
       preference :plunk_base_url, :string, default: 'https://next-api.useplunk.com'
       preference :plunk_secret_api_key, :password
       preference :plunk_public_api_key, :string
       preference :default_from_email, :string
       preference :default_from_name, :string
+      preference :transactional_email_enabled, :boolean, default: false
+      preference :password_reset_email_enabled, :boolean, default: false
+      preference :password_reset_template_id, :string
+      preference :newsletter_confirmation_email_enabled, :boolean, default: false
+      preference :newsletter_confirmation_template_id, :string
+      preference :order_confirmation_resend_email_enabled, :boolean, default: false
+      preference :order_confirmation_template_id, :string
       preference :unsubscribe_webhook_enabled, :boolean, default: false
       preference :unsubscribe_webhook_authorization_token, :password
 
@@ -31,6 +39,9 @@ module Spree
       validates :preferred_default_from_email, length: { maximum: MAX_SENDER_EMAIL_LENGTH }, allow_blank: true,
                                                       format: { with: URI::MailTo::EMAIL_REGEXP, message: :invalid_email_address }
       validates :preferred_default_from_name, length: { maximum: MAX_SENDER_NAME_LENGTH }, allow_blank: true
+      validates :preferred_password_reset_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_newsletter_confirmation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
+      validates :preferred_order_confirmation_template_id, length: { maximum: MAX_TEMPLATE_ID_LENGTH }, allow_blank: true
 
       validate :validate_plunk_base_url
       validate :validate_api_keys
@@ -77,6 +88,10 @@ module Spree
         handle_result(client.post('events/track', payload))
       end
 
+      def send_transactional_email(payload)
+        handle_result(client.post('v1/send', payload))
+      end
+
       private
 
       def client
@@ -93,6 +108,9 @@ module Spree
         self.preferred_unsubscribe_webhook_authorization_token = normalize_string(preferred_unsubscribe_webhook_authorization_token)
         self.preferred_default_from_email = normalize_string(preferred_default_from_email)&.downcase
         self.preferred_default_from_name = normalize_string(preferred_default_from_name)
+        self.preferred_password_reset_template_id = normalize_string(preferred_password_reset_template_id)
+        self.preferred_newsletter_confirmation_template_id = normalize_string(preferred_newsletter_confirmation_template_id)
+        self.preferred_order_confirmation_template_id = normalize_string(preferred_order_confirmation_template_id)
       end
 
       def normalize_string(value)
@@ -225,13 +243,14 @@ module Spree
       def extract_error_message(body)
         case body
         when Hash
-          errors = body['errors']
+          body = body.with_indifferent_access
+          errors = body[:errors]
 
-          body['error'] ||
-            body['message'] ||
+          body[:error] ||
+            body[:message] ||
             (errors.first if errors.is_a?(Array) && errors.first.is_a?(String)) ||
-            body.dig('errors', 0, 'message') ||
-            body.dig('errors', 0, 'detail') ||
+            body.dig(:errors, 0, :message) ||
+            body.dig(:errors, 0, :detail) ||
             body.inspect
         else
           body.to_s

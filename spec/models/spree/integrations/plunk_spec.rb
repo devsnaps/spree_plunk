@@ -19,7 +19,10 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         preferred_plunk_public_api_key: ' pk_test_123 ',
         preferred_unsubscribe_webhook_authorization_token: ' whsec_test_123 ',
         preferred_default_from_email: ' Marketing@Example.com ',
-        preferred_default_from_name: ' Example Store '
+        preferred_default_from_name: ' Example Store ',
+        preferred_password_reset_template_id: ' tpl_password ',
+        preferred_newsletter_confirmation_template_id: ' tpl_newsletter ',
+        preferred_order_confirmation_template_id: ' tpl_order '
       )
 
       integration.valid?
@@ -31,6 +34,9 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         expect(integration.preferred_unsubscribe_webhook_authorization_token).to eq('whsec_test_123')
         expect(integration.preferred_default_from_email).to eq('marketing@example.com')
         expect(integration.preferred_default_from_name).to eq('Example Store')
+        expect(integration.preferred_password_reset_template_id).to eq('tpl_password')
+        expect(integration.preferred_newsletter_confirmation_template_id).to eq('tpl_newsletter')
+        expect(integration.preferred_order_confirmation_template_id).to eq('tpl_order')
       end
     end
 
@@ -174,6 +180,53 @@ RSpec.describe Spree::Integrations::Plunk, type: :model do
         status: 401,
         error_message: 'Invalid API key',
         error_code: 'http_401',
+        retryable: false
+      )
+    end
+  end
+
+  describe '#send_transactional_email' do
+    let(:integration) { build(:plunk_integration, store: store) }
+    let(:payload) do
+      {
+        to: 'buyer@example.com',
+        from: 'orders@example.com',
+        subject: 'Order confirmation',
+        body: '<p>Thanks</p>'
+      }
+    end
+
+    it 'posts transactional email payloads to Plunk /v1/send' do
+      stub_request(:post, 'https://next-api.useplunk.com/v1/send')
+        .with(
+          headers: { 'Authorization' => "Bearer #{integration.preferred_plunk_secret_api_key}" },
+          body: hash_including('to' => 'buyer@example.com', 'subject' => 'Order confirmation')
+        )
+        .to_return(status: 200, body: '{"id":"email_123"}', headers: { 'Content-Type' => 'application/json' })
+
+      result = integration.send_transactional_email(payload)
+
+      aggregate_failures do
+        expect(result).to be_success
+        expect(result.value).to include('id' => 'email_123')
+      end
+    end
+
+    it 'extracts Plunk API messages from domain verification failures' do
+      stub_request(:post, 'https://next-api.useplunk.com/v1/send')
+        .to_return(
+          status: 403,
+          body: '{"code":"INTERNAL_SERVER_ERROR","message":"Domain \"example.com\" is not registered. Please add and verify this domain in your project settings.","statusCode":403}',
+          headers: { 'Content-Type' => 'application/json' }
+        )
+
+      result = integration.send_transactional_email(payload)
+
+      expect(result).to be_failure
+      expect(result.value).to include(
+        status: 403,
+        error_message: 'Domain "example.com" is not registered. Please add and verify this domain in your project settings.',
+        error_code: 'http_403',
         retryable: false
       )
     end

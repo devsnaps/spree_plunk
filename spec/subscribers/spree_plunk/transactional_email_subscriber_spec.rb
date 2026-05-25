@@ -15,7 +15,8 @@ RSpec.describe SpreePlunk::TransactionalEmailSubscriber do
       preferred_order_confirmation_resend_email_enabled: order_confirmation_resend_enabled,
       preferred_order_cancellation_email_enabled: order_cancellation_enabled,
       preferred_shipment_shipped_email_enabled: shipment_shipped_enabled,
-      preferred_reimbursement_email_enabled: reimbursement_enabled
+      preferred_reimbursement_email_enabled: reimbursement_enabled,
+      preferred_store_owner_notification_email_enabled: store_owner_notification_enabled
     )
   end
   let(:transactional_enabled) { true }
@@ -26,6 +27,7 @@ RSpec.describe SpreePlunk::TransactionalEmailSubscriber do
   let(:order_cancellation_enabled) { false }
   let(:shipment_shipped_enabled) { false }
   let(:reimbursement_enabled) { false }
+  let(:store_owner_notification_enabled) { false }
   let(:subscriber) { described_class.new }
 
   before do
@@ -188,6 +190,61 @@ RSpec.describe SpreePlunk::TransactionalEmailSubscriber do
         name: 'order.completed',
         store_id: store.id,
         payload: { 'id' => order.to_param, 'notify_customer' => false }
+      )
+
+      expect {
+        subscriber.send(:handle_order_completed, event)
+      }.not_to have_enqueued_job(SpreePlunk::SendTransactionalEmailJob)
+    end
+  end
+
+  context 'when store owner notification handoff is enabled' do
+    let(:store_owner_notification_enabled) { true }
+
+    before do
+      store.update!(new_order_notifications_email: 'owner@example.com')
+    end
+
+    it 'enqueues a store owner notification from order completion' do
+      user = create(:user, email: 'buyer@example.com')
+      order = create(
+        :completed_order_with_totals,
+        store: store,
+        user: user,
+        email: user.email,
+        confirmation_delivered: false,
+        store_owner_notification_delivered: false
+      )
+      payload = { 'id' => order.to_param, 'notify_customer' => true }
+      event = Spree::Event.new(
+        name: 'order.completed',
+        store_id: store.id,
+        payload: payload
+      )
+
+      expect {
+        subscriber.send(:handle_order_completed, event)
+      }.to have_enqueued_job(SpreePlunk::SendTransactionalEmailJob).with(
+        integration.id,
+        SpreePlunk::TransactionalEmailTypes::STORE_OWNER_NOTIFICATION,
+        Spree::Order.name,
+        order.id,
+        'owner@example.com',
+        payload
+      )
+    end
+
+    it 'does not enqueue when the store owner notification was already delivered' do
+      order = create(
+        :completed_order_with_totals,
+        store: store,
+        confirmation_delivered: false,
+        store_owner_notification_delivered: true
+      )
+      event = Spree::Event.new(
+        name: 'order.completed',
+        store_id: store.id,
+        payload: { 'id' => order.to_param, 'notify_customer' => true }
       )
 
       expect {

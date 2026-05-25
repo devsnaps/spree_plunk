@@ -60,6 +60,11 @@ module SpreePlunk
       return if order.respond_to?(:confirmation_delivered?) && order.confirmation_delivered?
       return if event_value(event.payload, :notify_customer) == false
 
+      enqueue_order_completed_confirmation(event, order)
+      enqueue_store_owner_notification(event, order)
+    end
+
+    def enqueue_order_completed_confirmation(event, order)
       integration = plunk_integration(event, store: order.store)
       return unless enabled_for?(integration, TransactionalEmailTypes::ORDER_CONFIRMATION)
 
@@ -69,6 +74,23 @@ module SpreePlunk
         ::Spree::Order.name,
         order.id,
         order.email,
+        event.payload
+      )
+    end
+
+    def enqueue_store_owner_notification(event, order)
+      return if order.respond_to?(:store_owner_notification_delivered?) && order.store_owner_notification_delivered?
+      return if order.store&.new_order_notifications_email.blank?
+
+      integration = plunk_integration(event, store: order.store)
+      return unless enabled_for?(integration, TransactionalEmailTypes::STORE_OWNER_NOTIFICATION)
+
+      SpreePlunk::SendTransactionalEmailJob.perform_later(
+        integration.id,
+        TransactionalEmailTypes::STORE_OWNER_NOTIFICATION,
+        ::Spree::Order.name,
+        order.id,
+        order.store.new_order_notifications_email,
         event.payload
       )
     end
@@ -247,6 +269,10 @@ module SpreePlunk
         integration.preferred_shipment_shipped_email_enabled
       when TransactionalEmailTypes::REIMBURSEMENT
         integration.preferred_reimbursement_email_enabled
+      when TransactionalEmailTypes::STORE_OWNER_NOTIFICATION
+        integration.preferred_store_owner_notification_email_enabled
+      when TransactionalEmailTypes::PAYMENT_LINK
+        integration.preferred_payment_link_email_enabled
       else
         false
       end

@@ -100,6 +100,8 @@ Current ownership boundary:
 - Reset and verification tokens are sent to Plunk as non-persistent template data.
 - Storefront URLs may be local during testing, but the sender email domain must still be verified in Plunk.
 
+See [docs/transactional-email-inventory.md](docs/transactional-email-inventory.md) for the detailed email attribution matrix.
+
 ### Admin And Operations
 
 - Spree admin integration form for Plunk credentials and base URL

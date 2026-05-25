@@ -54,6 +54,8 @@ RSpec.describe Spree::Admin::IntegrationsController, type: :controller do
         expect(response.body).to include('Server-side Plunk sync only needs the secret API key and API base URL.')
         expect(response.body).to include('Do not paste a specific endpoint like')
         expect(response.body).to include('Optional sender defaults')
+        expect(response.body).to include("require this mailbox's domain to be added and verified in Plunk")
+        expect(response.body).to include('Localhost storefront URLs are fine for link generation during development')
         expect(response.body).to include('The Public API Key is optional and intentionally unused by the current server-side MVP.')
         expect(response.body).to include('Inbound subscription-state webhook')
         expect(response.body).to include('contact.subscribed')

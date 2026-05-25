@@ -7,6 +7,13 @@ en:
         preferred_plunk_public_api_key: Public API Key
         preferred_default_from_email: Default Sender Email
         preferred_default_from_name: Default Sender Name
+        preferred_transactional_email_enabled: Enable Plunk Transactional Email
+        preferred_password_reset_email_enabled: Send Password Reset Emails
+        preferred_password_reset_template_id: Password Reset Template ID
+        preferred_newsletter_confirmation_email_enabled: Send Newsletter Confirmation Emails
+        preferred_newsletter_confirmation_template_id: Newsletter Confirmation Template ID
+        preferred_order_confirmation_resend_email_enabled: Send Order Confirmation Resends
+        preferred_order_confirmation_template_id: Order Confirmation Template ID
         preferred_unsubscribe_webhook_enabled: Enable Subscription Webhook
         preferred_unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token
     errors:
@@ -38,5 +45,12 @@ en:
           plunk_public_api_key: Public API Key
           default_from_email: Default Sender Email
           default_from_name: Default Sender Name
+          transactional_email_enabled: Enable Plunk Transactional Email
+          password_reset_email_enabled: Send Password Reset Emails
+          password_reset_template_id: Password Reset Template ID
+          newsletter_confirmation_email_enabled: Send Newsletter Confirmation Emails
+          newsletter_confirmation_template_id: Newsletter Confirmation Template ID
+          order_confirmation_resend_email_enabled: Send Order Confirmation Resends
+          order_confirmation_template_id: Order Confirmation Template ID
           unsubscribe_webhook_enabled: Enable Subscription Webhook
           unsubscribe_webhook_authorization_token: Subscription Webhook Authorization Token

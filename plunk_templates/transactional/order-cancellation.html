@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your {{store_name ?? Shop}} order {{order_number}} was canceled</title>
+  <style>
+    @media only screen and (max-width: 640px) {
+      .email-shell { width: 100% !important; }
+      .email-pad { padding-left: 20px !important; padding-right: 20px !important; }
+      .email-title { font-size: 28px !important; line-height: 34px !important; }
+      .email-button { display: block !important; text-align: center !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background:#f6f5f2; color:#111111; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f2;">
+    <tr>
+      <td align="center" style="padding:32px 12px;">
+        <table role="presentation" class="email-shell" width="680" cellpadding="0" cellspacing="0" style="width:680px; max-width:680px; background:#ffffff; border:1px solid #e7e5df;">
+          <tr>
+            <td class="email-pad" style="padding:34px 40px 12px;">
+              <div style="font-size:12px; line-height:18px; letter-spacing:0.16em; text-transform:uppercase;">{{store_name ?? Shop}}</div>
+              <div style="margin-top:18px; border-top:1px solid #111111;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td class="email-pad" style="padding:28px 40px 16px;">
+              <div style="font-size:11px; line-height:16px; letter-spacing:0.14em; text-transform:uppercase; color:#77736d;">Order {{order_number}}</div>
+              <h1 class="email-title" style="margin:14px 0 0; font-size:34px; line-height:40px; font-weight:400;">Your order was canceled</h1>
+              <p style="margin:18px 0 0; font-size:15px; line-height:24px; color:#3f3d39;">Hi {{customer_first_name ?? there}}, this confirms that order {{order_number}} has been canceled.</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="email-pad" style="padding:10px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e7e5df;">
+                <tr>
+                  <td style="padding:18px 20px; font-size:11px; line-height:16px; letter-spacing:0.14em; text-transform:uppercase; color:#77736d;">Canceled total</td>
+                  <td align="right" style="padding:18px 20px; font-size:18px; line-height:24px; color:#111111;">{{order_total}}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="email-pad" style="padding:18px 40px 6px;">
+              <h2 style="margin:0 0 12px; font-size:13px; line-height:18px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;">Items</h2>
+              {{line_items_html}}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-pad" style="padding:18px 40px 6px;">
+              <h2 style="margin:0 0 12px; font-size:13px; line-height:18px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;">Totals</h2>
+              {{totals_html}}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-pad" style="padding:24px 40px 34px;">
+              <p style="margin:0 0 18px; font-size:13px; line-height:22px; color:#6f6b64;">If you have questions about this cancellation, reply to this email or contact the store team.</p>
+              <a class="email-button" href="{{store_url ?? https://example.com}}" style="display:inline-block; border:1px solid #111111; color:#111111; text-decoration:none; padding:13px 23px; font-size:12px; line-height:16px; letter-spacing:0.12em; text-transform:uppercase;">Visit store</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -226,6 +226,8 @@ The current admin form exposes these fields.
 6. Trigger the selected email type, such as password reset, newsletter subscription request, order completion, order cancellation, shipment shipped, reimbursement, payment link, or explicit order confirmation resend.
 7. Watch Sidekiq and Plunk delivery logs for send failures such as unverified sender domains.
 
+Copy-ready Plunk template HTML lives in [`plunk_templates/`](plunk_templates/). It includes Transactional templates for the Spree Admin template ID fields and a Marketing campaign template that matches the storefront visual language.
+
 ### Plunk Template Variables For Order Emails
 
 Order-backed transactional emails expose top-level Plunk variables. Use `{{order_number}}`, not `{{data.order_number}}`, in hosted Plunk templates.

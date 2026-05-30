@@ -13,6 +13,7 @@ This document tracks the email ownership boundary between Spree/Rails, `spree_em
 - Do not let two systems send the same email type unless duplicate prevention is built and tested.
 - Transactional sends must not subscribe, resubscribe, unsubscribe, or otherwise change marketing consent.
 - Order, shipment, and reimbursement transactional template data is sent as non-persistent Plunk data and includes both structured values and Plunk-template-friendly HTML/text fragments for line items, totals, addresses, shipments, shipment items, return items, and exchange items.
+- Use [`docs/spree-emails-handoff-checklist.md`](spree-emails-handoff-checklist.md) when validating a host app after removing `spree_emails`.
 
 ## Customer-Facing Email Matrix
 

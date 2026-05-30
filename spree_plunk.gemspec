@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
     'source_code_uri' => "https://example.com/spree_plunk/tree/v#{s.version}"
   }
 
-  s.files = Dir['{app,config,db,lib,vendor}/**/*', 'Rakefile', 'README.md'].reject do |file|
+  s.files = Dir['{app,config,db,lib,script,vendor}/**/*', 'Rakefile', 'README.md'].reject do |file|
     file.match(/^spec/) && !file.match(/^spec\/fixtures/)
   end
   s.require_path = 'lib'

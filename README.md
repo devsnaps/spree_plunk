@@ -228,6 +228,15 @@ The current admin form exposes these fields.
 
 Copy-ready Plunk template HTML lives in [`plunk_templates/`](plunk_templates/). It includes Transactional templates for the Spree Admin template ID fields and a Marketing campaign template that matches the storefront visual language.
 
+To inspect a host app after removing `spree_emails`, run:
+
+```sh
+bundle exec rails runner 'load Gem.loaded_specs.fetch("spree_plunk").full_gem_path + "/script/inspect_transactional_email_handoff.rb"'
+```
+
+The detailed `spree_emails` removal handoff checklist lives in [`docs/spree-emails-handoff-checklist.md`](docs/spree-emails-handoff-checklist.md).
+Use it to distinguish Plunk direct-send smoke tests from full live handoff verification through real Spree triggers and duplicate checks.
+
 ### Plunk Template Variables For Order Emails
 
 Order-backed transactional emails expose top-level Plunk variables. Use `{{order_number}}`, not `{{data.order_number}}`, in hosted Plunk templates.

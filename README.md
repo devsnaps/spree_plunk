@@ -106,6 +106,7 @@ Current ownership boundary:
 - Order completion handoff preserves `notify_customer: false` and `confirmation_delivered` guards before enqueueing a Plunk send.
 - Reset and verification tokens are sent to Plunk as non-persistent template data.
 - Storefront URLs may be local during testing, but the sender email domain must still be verified in Plunk.
+- A local host-app validation on 2026-05-31 confirmed `spree_emails` absent, all current `spree_plunk` transactional switches enabled, no `ActionMailer` deliveries during trigger probes, and expected `spree_plunk` ownership for each supported trigger. Full live acceptance still requires checking Plunk delivery logs and the test inbox for one delivery per trigger window.
 
 See [docs/transactional-email-inventory.md](docs/transactional-email-inventory.md) for the detailed email attribution matrix.
 

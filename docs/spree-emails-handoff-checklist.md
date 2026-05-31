@@ -1,6 +1,6 @@
 # `spree_emails` Handoff Checklist
 
-Last updated: 2026-05-30
+Last updated: 2026-05-31
 
 This checklist is for host apps that remove `spree_emails` and expect `spree_plunk` plus hosted Plunk to own customer-facing transactional sends.
 
@@ -55,9 +55,9 @@ Receiving one email in the test inbox is a useful signal, but it is not the whol
 
 When `spree_emails` has been removed, duplicates from `Spree::OrderMailer`, `Spree::ShipmentMailer`, `Spree::ReimbursementMailer`, and `Spree::NewsletterMailer` should be impossible because those constants are missing. Duplicates can still happen from another host-app mailer, a queued old job, a Plunk workflow that sends the same message, or triggering the same action twice.
 
-## Example Host-App Snapshot
+## Latest Host-App Validation Snapshot
 
-Captured on 2026-05-25 from a local Spree starter app after removing `spree_emails`. Treat this as an example output shape; run the inspector in your own host app for current status.
+Captured on 2026-05-31 from a local Spree starter host app after removing `spree_emails`. The host app used a path checkout of `spree_plunk`, a verified sender domain, and an authorized test inbox. Do not treat this as a substitute for running the inspector in a different host app.
 
 | Check | Result |
 | --- | --- |
@@ -69,11 +69,46 @@ Captured on 2026-05-25 from a local Spree starter app after removing `spree_emai
 | `Spree::NewsletterMailer` | Missing |
 | `spree_plunk` gem loaded | Yes |
 | Plunk transactional master switch | On |
-| Verified sender domain in use | Example checked locally; use your own verified sender domain |
-| Enabled Plunk email types | password reset, newsletter confirmation, order confirmation resend |
-| Disabled Plunk email types | order confirmation, order cancellation, shipment shipped, reimbursement, store owner notification, payment link |
+| Verified sender domain in use | Yes; use your own verified sender domain |
+| Enabled Plunk email types | password reset, newsletter confirmation, order confirmation, order confirmation resend, order cancellation, shipment shipped, reimbursement, store owner notification, payment link |
+| Disabled Plunk email types | none |
 
-This means the app can currently send only the enabled Plunk-owned types. With `spree_emails` removed, the disabled types intentionally have no sender.
+This means the host app is configured so all currently supported `spree_emails` handoff types are owned by `spree_plunk`.
+
+## 2026-05-31 Validation Notes
+
+The local validation used two kinds of checks:
+
+- Direct-send smoke checks confirmed the hosted Plunk `/v1/send` path, verified sender domain, template or inline body rendering, and recipient delivery against an authorized test inbox. A later full-send runner session lost its terminal handle, so it was not repeated to avoid duplicate emails.
+- Non-delivery trigger probes stubbed the Plunk HTTP transactional send response as successful while leaving the Spree event, subscriber, job, presenter, and delivery-marker code paths active.
+
+Trigger probe results:
+
+| Trigger | Expected `spree_plunk` sends | Result |
+| --- | ---: | --- |
+| `customer.password_reset_requested` | 1 | Pass |
+| `Spree::Newsletter::Subscribe` publishing `newsletter_subscriber.subscription_requested` | 1 | Pass |
+| `order.completed` with customer and store-owner notification enabled | 2 | Pass |
+| `order.resend_confirmation_email` | 1 | Pass |
+| `Spree::Orders::Cancel` publishing `order.canceled` with `notify_customer: true` | 1 | Pass |
+| `shipment.shipped` using the shipment model default `event_payload` | 1 | Pass |
+| `reimbursement.reimbursed` using the reimbursement model default `event_payload` | 1 | Pass |
+| Payment-link job payload matching the admin controller decorator | 1 | Pass |
+
+Duplicate checks observed in the trigger probes:
+
+- `ActionMailer` deliveries observed in the runner: 0
+- `confirmation_delivered` moved to true after order confirmation/resend paths
+- `store_owner_notification_delivered` moved to true after store-owner notification
+- temporary test orders, test newsletter subscriptions, and temporary store-owner notification settings were cleaned up after the run
+
+Important note: `shipment.shipped` and `reimbursement.reimbursed` subscribers require the normal model event payload so they can resolve the resource id. A custom payload that omits `id` is not a valid handoff trigger for these email types.
+
+Remaining manual confirmation for full live acceptance:
+
+- confirm the Plunk delivery log has one matching transactional send per live trigger window
+- confirm the test inbox has one matching email per live trigger window
+- confirm no Plunk workflow or campaign is configured to send the same operational email from the same event
 
 ## Handoff Matrix
 

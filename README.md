@@ -124,11 +124,17 @@ See [docs/transactional-email-inventory.md](docs/transactional-email-inventory.m
 
 ## Installation
 
-Install the extension in the host Spree app and run the generator:
+1. Add this extension to your Gemfile with this line:
 
-```bash
-bundle exec rails generate spree_plunk:install
-```
+    ```ruby
+    gem 'spree_plunk', github: 'laaichiu/spree_plunk'
+    ```
+
+2. Run the install generator
+
+    ```ruby
+    bundle exec rails g spree_plunk:install
+    ```
 
 After installation:
 
